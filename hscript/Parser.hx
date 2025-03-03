@@ -1908,59 +1908,117 @@ class Parser {
 
 	var preprocStack : Array<{ r : Bool }>;
 
-	function parsePreproCond() {
+	function parsePreproCond():Expr {
 		var tk = token();
 		return switch( tk ) {
-		case TPOpen:
-			push(TPOpen);
-			parseExpr();
-		case TId(id):
-			while(true) {
-				var tk = token();
-				if(tk == TDot) {
-					id += ".";
+			case TPOpen:
+				push(TPOpen);
+				parseExpr();
+			case TId(id):
+				var tk;
+				while(true) {
 					tk = token();
-					switch(tk) {
-						case TId(id2):
-							id += id2;
-						default: unexpected(tk);
+					if(tk == TDot) {
+						id += ".";
+						tk = token();
+						switch(tk) {
+							case TId(id2):
+								id += id2;
+							default: unexpected(tk);
+						}
+					} else {
+						push(tk);
+						break;
 					}
-				} else {
-					push(tk);
-					break;
 				}
-			}
-			mk(EIdent(id), tokenMin, tokenMax);
-		case TOp("!"):
-			mk(EUnop("!", true, parsePreproCond()), tokenMin, tokenMax);
-		default:
-			unexpected(tk);
+				mk(EIdent(id), tokenMin, tokenMax);
+			case TOp("!"):
+				mk(EUnop("!", true, parsePreproCond()), tokenMin, tokenMax);
+			default:
+				unexpected(tk);
 		}
 	}
 
-	function evalPreproCond( e : Expr ) {
-		switch( expr(e) ) {
-		case EIdent(id):
-			return preprocValue(id) != null;
-		case EField(e2, f):
-			switch(expr(e2)) {
-				case EIdent(id):
-					return preprocValue(id + "." + f) != null;
-				default:
-					error(EInvalidPreprocessor("Can't eval " + expr(e).getName() + " with " + expr(e2).getName()), readPos, readPos);
-					return false;
-			}
-		case EUnop("!", _, e):
-			return !evalPreproCond(e);
-		case EParent(e):
-			return evalPreproCond(e);
-		case EBinop("&&", e1, e2):
-			return evalPreproCond(e1) && evalPreproCond(e2);
-		case EBinop("||", e1, e2):
-			return evalPreproCond(e1) || evalPreproCond(e2);
-		default:
-			error(EInvalidPreprocessor("Can't eval " + expr(e).getName()), readPos, readPos);
-			return false;
+
+	function getStrPreprocValue( e : Expr ):String
+	{
+		var edef:ExprDef = expr(e);
+		switch( edef )
+		{
+			case EParent(e):
+				return getStrPreprocValue(e);
+			case EIdent(id):
+				return Std.string(preprocValue(id));
+			case EField(e2, f):
+				switch(expr(e2)) {
+					case EIdent(id):
+						return Std.string(preprocValue(id + "." + f));
+					case edef2:
+						error(EInvalidPreprocessor("Can't eval " + edef.getName() + " with " + edef2.getName()), readPos, readPos);
+						return "";
+				}
+			case EConst(c):
+				switch (c) {
+					case CInt(v): return Std.string(v);
+					case CFloat(f): return Std.string(f);
+					case CString(s): return s;
+				}
+			case ECall(expr(_) => EIdent("version"), expr(_[0]) => EConst(CString(s))):
+				return s;
+			// todo: allow more?
+			default:
+				error(EInvalidPreprocessor("Can't eval " + edef.getName()), readPos, readPos);
+				return "";
+		}
+	}
+
+
+	function evalPreproCond( e : Expr ):Bool {
+		// trace(Printer.toString(e));
+		var edef:ExprDef = expr(e);
+		switch( edef ) {
+			case EIdent(id):
+				var val:Dynamic = preprocValue(id);
+				return val != null && val != 0 && val != false;
+			case EField(e2, f):
+				switch(expr(e2)) {
+					case EIdent(id):
+						var val:Dynamic = preprocValue(id + "." + f);
+						return val != null && val != 0 && val != false;
+					case edef2:
+						error(EInvalidPreprocessor("Can't eval " + edef.getName() + " with " + edef2.getName()), readPos, readPos);
+						return false;
+				}
+			case EUnop("!", _, e):
+				return !evalPreproCond(e);
+			case EParent(e):
+				return evalPreproCond(e);
+			case EBinop(op, e1, e2):
+				switch (op)
+				{
+					case "&&":
+						return evalPreproCond(e1) && evalPreproCond(e2);
+					case "||":
+						return evalPreproCond(e1) || evalPreproCond(e2);
+					case "==":
+						return getStrPreprocValue(e1) == getStrPreprocValue(e2);
+					case "!=":
+						return getStrPreprocValue(e1) != getStrPreprocValue(e2);
+					case "<=":
+						return getStrPreprocValue(e1) <= getStrPreprocValue(e2);
+					case "<":
+						return getStrPreprocValue(e1) < getStrPreprocValue(e2);
+					case ">=":
+						return getStrPreprocValue(e1) >= getStrPreprocValue(e2);
+					case ">":
+						return getStrPreprocValue(e1) > getStrPreprocValue(e2);
+					default:
+						error(EInvalidPreprocessor('Uncorrected operator \'$op\''), readPos, readPos);
+						return false;
+				}
+			default:
+				error(EInvalidPreprocessor("Can't eval " + edef.getName()), readPos, readPos);
+				return false;
 		}
 	}
 
@@ -2073,24 +2131,24 @@ class Parser {
 
 	function tokenString( t ) {
 		return switch( t ) {
-		case TEof: "<eof>";
-		case TConst(c): constString(c);
-		case TId(s): s;
-		case TOp(s): s;
-		case TPOpen: "(";
-		case TPClose: ")";
-		case TBrOpen: "{";
-		case TBrClose: "}";
-		case TDot: ".";
-		case TQuestionDot: "?.";
-		case TComma: ",";
-		case TSemicolon: ";";
-		case TBkOpen: "[";
-		case TBkClose: "]";
-		case TQuestion: "?";
-		case TDoubleDot: ":";
-		case TMeta(id): "@" + id;
-		case TPrepro(id): "#" + id;
+			case TEof: "<eof>";
+			case TConst(c): constString(c);
+			case TId(s): s;
+			case TOp(s): s;
+			case TPOpen: "(";
+			case TPClose: ")";
+			case TBrOpen: "{";
+			case TBrClose: "}";
+			case TDot: ".";
+			case TQuestionDot: "?.";
+			case TComma: ",";
+			case TSemicolon: ";";
+			case TBkOpen: "[";
+			case TBkClose: "]";
+			case TQuestion: "?";
+			case TDoubleDot: ":";
+			case TMeta(id): "@" + id;
+			case TPrepro(id): "#" + id;
 		}
 	}
 

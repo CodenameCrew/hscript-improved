@@ -28,6 +28,9 @@
  */
 package hscript;
 
+import hscript.proxy.ProxyType;
+import hscript.Tools.EnumValue;
+import hscript.Tools.HScriptEnum;
 import haxe.Constraints.Function;
 import hscript.utils.UsingHandler;
 import hscript.customclass.CustomClassDecl;
@@ -76,22 +79,26 @@ class RedeclaredVar {
 @:analyzer(optimize, local_dce, fusion, user_var_fusion)
 class Interp {
 	private static var _customClasses:Map<String, CustomClassDecl> = new Map<String, CustomClassDecl>();
+	private static var _customClassAliases:Map<String, String> = new Map<String, String>();
 
 	public static function getCustomClass(name:String) {
+		// Retrieves the real class name
+		var realName = _customClassAliases.get(name);
+		if(realName != null) name = realName;
 		return _customClasses.get(name);
 	}
 
 	public static function customClassExist(name:String):Bool {
-		return _customClasses.exists(name);
+		return _customClassAliases.exists(name) || _customClasses.exists(name);
 	}
 
 	private static function registerCustomClass(c:CustomClassDecl, ?as:String, ?inCustomClass:Bool) {
 		#if CUSTOM_CLASSES
 		var name = c.classDecl.name;
-		if (as != null) name = as;
-		else if (c.pkg != null && (inCustomClass != null && inCustomClass)) {
-			name = c.pkg.join(".") + "." + name;
+		if (c.pkg != null && (inCustomClass != null && inCustomClass)) {
+			name = '${c.pkg.join(".")}.$name';//c.pkg.join(".") + "." + name;
 		}
+		if (as != null) _customClassAliases.set(as, name);
 		_customClasses.set(name, c);
 		#end
 	}
@@ -755,6 +762,7 @@ class Interp {
 		return null;
 	}
 
+	// backwards compatibility
 	public static var importRedirects:Map<String, String> = new Map();
 	public static function getImportRedirect(className:String):String {
 		return importRedirects.exists(className) ? importRedirects.get(className) : className;
@@ -763,6 +771,8 @@ class Interp {
 	public var localImportRedirects:Map<String, String> = new Map();
 	public function getLocalImportRedirect(className:String):String {
 		var className = className;
+		if (InterpConfig.IMPORT_REDIRECTS.exists(className))
+			className = InterpConfig.IMPORT_REDIRECTS.get(className);
 		if (importRedirects.exists(className))
 			className = importRedirects.get(className);
 		if (localImportRedirects.exists(className))
@@ -804,6 +814,8 @@ class Interp {
 				var realClassName = getLocalImportRedirect(realClassName);
 
 				if (importBlocklist.contains(realClassName))
+					return null;
+				if (InterpConfig.DISALLOW_IMPORT.contains(realClassName))
 					return null;
 				var cl = Type.resolveClass(realClassName);
 				if (cl == null)
@@ -1256,11 +1268,12 @@ class Interp {
 			case EUsing(name):
 				useUsing(name);
 			case EEnum(enumName, fields):
-				var obj = {};
+				var obj:HScriptEnum = new HScriptEnum();
 				for (index => field in fields) {
 					switch (field) {
 						case ESimple(name):
-							Reflect.setField(obj, name, new Tools.EnumValue(enumName, name, index, null));
+							//Reflect.setField(obj, name, new Tools.EnumValue(enumName, name, index, obj, null));
+							obj.setEnum(name, new EnumValue(enumName, name, index, obj, null));
 						case EConstructor(name, params):
 							var hasOpt = false, minParams = 0;
 							for (p in params)
@@ -1291,11 +1304,12 @@ class Interp {
 											args2.push(args[pos++]);
 									args = args2;
 								}
-								return new Tools.EnumValue(enumName, name, index, args);
+								return new Tools.EnumValue(enumName, name, index, obj, args);
 							};
 							var f = Reflect.makeVarArgs(f);
 
-							Reflect.setField(obj, name, f);
+							//Reflect.setField(obj, name, f);
+							obj.setEnum(name, f);
 					}
 				}
 

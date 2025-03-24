@@ -173,11 +173,13 @@ class EnumValue {
 	public var name: String;
 	public var index: Int;
 	public var args: Array<Dynamic>;
+	public var enumParent:Dynamic;
 
-	public function new(enumName: String, name: String, index: Int, ?args: Array<Dynamic>) {
+	public function new(enumName: String, name: String, index: Int, enumParent:Dynamic, ?args: Array<Dynamic>) {
 		this.enumName = enumName;
 		this.name = name;
 		this.index = index;
+		this.enumParent = enumParent;
 		this.args = args;
 	}
 
@@ -210,5 +212,30 @@ class EnumValue {
 		}
 
 		return true;
+	}
+}
+
+class HScriptEnum implements IHScriptCustomBehaviour{
+	public var enumValues(default, null) = {};
+
+	public function new() {}
+
+	public function setEnum(name:String, enumValue:Dynamic) {
+		//enumValues.set(name, enumValue);
+		Reflect.setField(enumValues, name, enumValue);
+	}
+
+	public function getEnum(name:String):Null<Dynamic> {
+		//if(enumValues.exists(name)) return enumValues.get(name);
+		if(Reflect.hasField(enumValues, name)) return Reflect.field(enumValues, name);
+		return null;
+	}
+
+	public function hget(name:String):Dynamic {
+		return getEnum(name);
+	}
+
+	public function hset(name:String, val:Dynamic):Dynamic {
+		throw new haxe.exceptions.NotImplementedException();
 	}
 }

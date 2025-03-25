@@ -163,6 +163,14 @@ class Tools {
 		#end
 	}
 
+	public static function getClassDeclFields(classDecl:hscript.Expr.ClassDecl, onlyStatic:Bool = false):Array<FieldDecl> {
+		var fields = classDecl.fields.filter(function(field:FieldDecl) {
+			var isStatic = field.access.contains(AStatic);
+			return onlyStatic ? isStatic : !isStatic;
+		});
+		return fields;
+	}
+
 }
 
 /**

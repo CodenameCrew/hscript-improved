@@ -11,6 +11,8 @@ using Lambda;
 using StringTools;
 
 /**
+ * The Custom Class core.
+ * 
  * Provides handlers for custom classes.
  * Based on Polymod Hscript class system
  * @see https://github.com/larsiusprime/polymod/tree/master/polymod/hscript/_internal
@@ -23,6 +25,15 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	public var superConstructor(default, null):Dynamic;
 
 	public var className(get, never):String;
+	private function get_className():String {
+		// TODO: simplify this
+		var name = "";
+		if (__class.pkg != null) {
+			name += __class.pkg.join(".");
+		}
+		name += __class.classDecl.name;
+		return name;
+	}
 
 	private var __class:CustomClassDecl;
 	private var _cachedSuperFields:Null<Map<String, Dynamic>> = null;
@@ -33,16 +44,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 	public var __allowSetGet:Bool = true;
 
-	private function get_className():String {
-		var name = "";
-		if (__class.pkg != null) {
-			name += __class.pkg.join(".");
-		}
-		name += __class.classDecl.name;
-		return name;
-	}
-
-	public function new(__class:CustomClassDecl, args:Array<Dynamic>, ?extendFieldDecl:Map<String, Dynamic>, ?ogInterp:Interp) {
+	public function new(__class:CustomClassDecl, args:Array<Dynamic>, ?extendFieldDecl:Map<String, Dynamic>, ?ogInterp:Interp, ?callNew:Bool = true) {
 		this.__class = __class;
 		this.interp = new Interp(this);
 
@@ -61,7 +63,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 		buildClass();
 
-		if (hasFunction('new')) {
+		if (hasFunction('new') && callNew) {
 			buildSuperConstructor();
 			callFunction('new', args);
 			if (this.superClass == null && this.__class.classDecl.extend != null)
@@ -132,8 +134,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		}
 
 		if (Interp.customClassExist(extendString)) {
-			var abstractSuperClass:CustomClass = new CustomClass(Interp.getCustomClass(extendString), args, _cachedSuperFields, this.interp);
-			superClass = abstractSuperClass;
+			var customSuperClass:CustomClass = new CustomClass(Interp.getCustomClass(extendString), args, _cachedSuperFields, this.interp);
+			superClass = customSuperClass;
 		} else {
 			var c = Type.resolveClass('${extendString}_HSX');
 			if (c == null) {

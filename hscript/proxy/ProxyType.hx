@@ -15,8 +15,10 @@ class ProxyType {
 
 		In general, type parameter information cannot be obtained at runtime.
 	**/
-	inline static function getClass<T>(o:T):Null<Class<T>> {
-		return Type.getClass(o);
+	inline static function getClass<T>(o:OneOfTwo<T, CustomClass>):Null<Dynamic> {
+		if(o is CustomClass) 
+			@:privateAccess return cast(o, CustomClass).__class;
+		return Type.getClass(cast o);
 	}
 
 	/**
@@ -48,6 +50,7 @@ class ProxyType {
 		In general, type parameter information cannot be obtained at runtime.
 	**/
 	inline static function getSuperClass(c:Class<Dynamic>):Class<Dynamic> {
+		// TODO: SuperClass declaration on CustomClassDecl instead of CustomClass
 		return Type.getSuperClass(c);
 	}
 
@@ -66,8 +69,15 @@ class ProxyType {
 
 		The class name does not include any type parameters.
 	**/
-	inline static function getClassName(c:Class<Dynamic>):String {
-		return Type.getClassName(c);
+	inline static function getClassName(c:OneOfTwo<Class<Dynamic>, CustomClassDecl>):String {
+		if(c is CustomClassDecl) {
+			var cls:CustomClassDecl = cast c;
+			var name = cls.classDecl.name;
+			if(cls.pkg != null)
+				name = cls.pkg.join('.') + name;
+			return name;
+		}
+		return Type.getClassName(cast c);
 	}
 
 	/**
@@ -147,9 +157,9 @@ class ProxyType {
 		guaranteed to be taken into account.
 	**/
 	inline static function createInstance<T>(cl:OneOfTwo<Class<T>, CustomClassDecl>, args:Array<Dynamic>):T {
+		// TODO: somehow pass the ogInterp argument without breaking the original functionality
 		if(cl is CustomClassDecl) {
-			//return cast new CustomClass(cast cl, args);
-			return cast Type.createInstance(CustomClass, [cast cl, args]);
+			return cast new CustomClass(cast cl, args);
 		}
 		return Type.createInstance(cast cl, args);
 	}
@@ -161,8 +171,11 @@ class ProxyType {
 
 		If `cl` is null, the result is unspecified.
 	**/
-	inline static function createEmptyInstance<T>(cl:Class<T>):T {
-		return Type.createEmptyInstance(cl);
+	inline static function createEmptyInstance<T>(cl:OneOfTwo<Class<T>, CustomClassDecl>):T {
+		// TODO: same as above
+		if(cl is CustomClassDecl) 
+			return cast new CustomClass(cast cl, [], null, null, false);
+		return Type.createEmptyInstance(cast cl);
 	}
 
 	/**
@@ -217,8 +230,12 @@ class ProxyType {
 
 		If `c` is null, the result is unspecified.
 	**/
-	inline static function getInstanceFields(c:Class<Dynamic>):Array<String> {
-		return Type.getInstanceFields(c);
+	inline static function getInstanceFields(c:OneOfTwo<Class<Dynamic>, CustomClassDecl>):Array<String> {
+		if(c is CustomClassDecl) {
+			var cls:CustomClassDecl = cast c;
+			return [for(f in Tools.getClassDeclFields(cls.classDecl)) f.name];
+		}
+		return Type.getInstanceFields(cast c);
 	}
 
 	/**
@@ -230,8 +247,12 @@ class ProxyType {
 
 		If `c` is null, the result is unspecified.
 	**/
-	inline static function getClassFields(c:Class<Dynamic>):Array<String> {
-		return Type.getClassFields(c);
+	inline static function getClassFields(c:OneOfTwo<Class<Dynamic>, CustomClassDecl>):Array<String> {
+		if(c is CustomClassDecl) {
+			var cls:CustomClassDecl = cast c;
+			return [for(f in Tools.getClassDeclFields(cls.classDecl, true)) f.name];
+		}
+		return Type.getClassFields(cast c);
 	}
 
 	/**

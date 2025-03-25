@@ -2126,7 +2126,7 @@ class Parser {
 					{
 						return unexpected(TPrepro(id));
 					}
-				case "error":
+				case "error" if ( preprocStack.length == 0 || preprocStack[preprocStack.length - 1].r):
 					var tokenMin = tokenMin;
 					error(ECustom(getValFromPreproExpr(parsePreproCond())), tokenMin,tokenMax);
 					return returnToken();

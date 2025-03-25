@@ -20,6 +20,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 package hscript;
+
+import hscript.thx_semver.Version;
 import hscript.Expr;
 
 enum Token {
@@ -61,6 +63,11 @@ class Parser {
 		allows to check for #if / #else in code
 	**/
 	public var preprocessorValues : Map<String,Dynamic> = new Map();
+
+	/**
+		defines preprocessor variables that will be considered false
+	**/
+	public var invalidPreprocessValues : Array<Dynamic> = [null, "0", 0, false];
 
 	/**
 		activate JSON compatibility
@@ -194,6 +201,10 @@ class Parser {
 			if( tk == TEof ) break;
 			push(tk);
 			parseFullExpr(a);
+		}
+		if(preprocStack.length > 0)
+		{
+			error(EInvalidPreprocessor("Unclosed"), tokenMin, tokenMax);
 		}
 		return if( a.length == 1 ) a[0] else mk(EBlock(a),0);
 	}
@@ -1346,6 +1357,10 @@ class Parser {
 			push(tk);
 			decls.push(parseModuleDecl());
 		}
+		if(preprocStack.length > 0)
+		{
+			error(EInvalidPreprocessor("Unclosed"), tokenMin, tokenMax);
+		}
 		return decls;
 	}
 
@@ -1910,10 +1925,10 @@ class Parser {
 
 	function parsePreproCond():Expr {
 		var tk = token();
-		return switch( tk ) {
+		switch( tk ) {
 			case TPOpen:
 				push(TPOpen);
-				parseExpr();
+				return parseExpr();
 			case TId(id):
 				var tk;
 				while(true) {
@@ -1931,60 +1946,63 @@ class Parser {
 						break;
 					}
 				}
-				mk(EIdent(id), tokenMin, tokenMax);
+				return mk(EIdent(id), tokenMin, tokenMax);
+			case TConst(c):
+				return mk(EConst(c), tokenMin, tokenMax);
 			case TOp("!"):
-				mk(EUnop("!", true, parsePreproCond()), tokenMin, tokenMax);
+				return mk(EUnop("!", true, parsePreproCond()), tokenMin, tokenMax);
 			default:
-				unexpected(tk);
+				return unexpected(tk);
 		}
 	}
 
-
-	function getStrPreprocValue( e : Expr ):String
+	function getValFromPreproExpr( e : Expr ) : Dynamic
 	{
 		var edef:ExprDef = expr(e);
 		switch( edef )
 		{
 			case EParent(e):
-				return getStrPreprocValue(e);
+				return getValFromPreproExpr(e);
 			case EIdent(id):
-				return Std.string(preprocValue(id));
-			case EField(e2, f):
-				switch(expr(e2)) {
-					case EIdent(id):
-						return Std.string(preprocValue(id + "." + f));
-					case edef2:
-						error(EInvalidPreprocessor("Can't eval " + edef.getName() + " with " + edef2.getName()), readPos, readPos);
-						return "";
-				}
+				return preprocValue(id);
 			case EConst(c):
-				switch (c) {
-					case CInt(v): return Std.string(v);
-					case CFloat(f): return Std.string(f);
-					case CString(s): return s;
+				return switch (c) {
+					case CInt(v): v;
+					case CFloat(f): f;
+					case CString(s): s;
 				}
 			case ECall(expr(_) => EIdent("version"), expr(_[0]) => EConst(CString(s))):
+				try
+				{
+					(s : Version);
+				}
+				catch(_)
+				{
+					error(EInvalidPreprocessor('Invalid version string $s. Should follow SemVer.'), readPos, readPos);
+				}
 				return s;
-			// todo: allow more?
+
 			default:
-				error(EInvalidPreprocessor("Can't eval " + edef.getName()), readPos, readPos);
-				return "";
+				error(EInvalidPreprocessor(edef.getName()), readPos, readPos);
+				return null;
 		}
 	}
 
-
 	function evalPreproCond( e : Expr ):Bool {
-		// trace(Printer.toString(e));
 		var edef:ExprDef = expr(e);
 		switch( edef ) {
+			case EConst(c):
+				return !invalidPreprocessValues.contains(switch (c) {
+					case CInt(v): v;
+					case CFloat(f): f;
+					case CString(s): s;
+				});
 			case EIdent(id):
-				var val:Dynamic = preprocValue(id);
-				return val != null && val != 0 && val != false;
-			case EField(e2, f):
-				switch(expr(e2)) {
+				return !invalidPreprocessValues.contains(preprocValue(id));
+			case EField(e1, f1):
+				switch(expr(e1)) {
 					case EIdent(id):
-						var val:Dynamic = preprocValue(id + "." + f);
-						return val != null && val != 0 && val != false;
+						return !invalidPreprocessValues.contains(preprocValue('$id.$f1'));
 					case edef2:
 						error(EInvalidPreprocessor("Can't eval " + edef.getName() + " with " + edef2.getName()), readPos, readPos);
 						return false;
@@ -2000,19 +2018,53 @@ class Parser {
 						return evalPreproCond(e1) && evalPreproCond(e2);
 					case "||":
 						return evalPreproCond(e1) || evalPreproCond(e2);
-					case "==":
-						return getStrPreprocValue(e1) == getStrPreprocValue(e2);
-					case "!=":
-						return getStrPreprocValue(e1) != getStrPreprocValue(e2);
-					case "<=":
-						return getStrPreprocValue(e1) <= getStrPreprocValue(e2);
-					case "<":
-						return getStrPreprocValue(e1) < getStrPreprocValue(e2);
-					case ">=":
-						return getStrPreprocValue(e1) >= getStrPreprocValue(e2);
-					case ">":
-						return getStrPreprocValue(e1) > getStrPreprocValue(e2);
-					default:
+					case op:
+						var e1:Dynamic = getValFromPreproExpr(e1);
+						var e2:Dynamic = getValFromPreproExpr(e2);
+						try {
+							var vers1:Version = Std.string(e1);
+							var vers2:Version = Std.string(e2);
+							switch (op) {
+								case "==":
+									return vers1 == vers2;
+								case "!=":
+									return vers1 != vers2;
+								case ">=":
+									return vers1 >= vers2;
+								case ">":
+									return vers1 > vers2;
+								case "<=":
+									return vers1 <= vers2;
+								case "<":
+									return vers1 < vers2;
+								default:
+									throw null;
+							}
+						} catch(e:String) { // doesn't capture SemVer error
+						} catch(e) {
+							error(EInvalidPreprocessor('Invalid operator \'$op\' for SemVer'), readPos, readPos);
+							return false;
+						}
+						try {
+							switch (op) {
+								case "==":
+									return e1 == e2;
+								case "!=":
+									return e1 != e2;
+								case ">=":
+									return e1 >= e2;
+								case ">":
+									return e1 > e2;
+								case "<=":
+									return e1 <= e2;
+								case "<":
+									return e1 < e2;
+								default:
+							}
+						} catch(_) {
+							error(EInvalidPreprocessor('Invalid operator \'$op\''), readPos, readPos);
+							return false;
+						}
 						error(EInvalidPreprocessor('Uncorrected operator \'$op\''), readPos, readPos);
 						return false;
 				}
@@ -2022,37 +2074,65 @@ class Parser {
 		}
 	}
 
+	var _inIfPrepocess:Bool = false;
+
 	function preprocess( id : String ) : Token {
-		switch( id ) {
-		case "if":
-			var e = parsePreproCond();
-			if( evalPreproCond(e) ) {
-				preprocStack.push({ r : true });
-				return token();
+		inline function returnToken() {
+			return switch (token()) {
+				case TPrepro(id = "if" | "else" | "elseif" | "end"):
+					preprocess(id);
+				case t: t;
 			}
-			preprocStack.push({ r : false });
-			skipTokens();
-			return token();
-		case "else", "elseif" if( preprocStack.length > 0 ):
-			if( preprocStack[preprocStack.length - 1].r ) {
-				preprocStack[preprocStack.length - 1].r = false;
-				skipTokens();
-				return token();
-			} else if( id == "else" ) {
-				preprocStack.pop();
-				preprocStack.push({ r : true });
-				return token();
-			} else {
-				// elseif
-				preprocStack.pop();
-				return preprocess("if");
-			}
-		case "end" if( preprocStack.length > 0 ):
-			preprocStack.pop();
-			return token();
-		default:
-			return TPrepro(id);
 		}
+		if ( !_inIfPrepocess ) {
+			switch( id ) {
+				case "if":
+					_inIfPrepocess = true;
+					var result = evalPreproCond(parsePreproCond());
+					_inIfPrepocess = false;
+					preprocStack.push({ r : result });
+					if(!result) {
+						skipTokens();
+					}
+					return returnToken();
+				case "else", "elseif":
+					if ( preprocStack.length > 0 ) {
+						var last = preprocStack[preprocStack.length - 1];
+						if( last.r ) {
+							skipTokens();
+							last.r = false;
+							return returnToken();
+						} else if( id == "else" ) {
+							preprocStack.pop();
+							preprocStack.push({ r : true });
+							return returnToken();
+						} else {
+							// elseif
+							preprocStack.pop();
+							return preprocess("if");
+						}
+					}
+					else
+					{
+						return unexpected(TPrepro(id));
+					}
+				case "end":
+					if( preprocStack.length > 0 )
+					{
+						preprocStack.pop();
+						return returnToken();
+					}
+					else
+					{
+						return unexpected(TPrepro(id));
+					}
+				case "error":
+					var tokenMin = tokenMin;
+					error(ECustom(getValFromPreproExpr(parsePreproCond())), tokenMin,tokenMax);
+					return returnToken();
+			}
+		}
+		return TPrepro(id);
 	}
 
 	function skipTokens() {
@@ -2061,7 +2141,7 @@ class Parser {
 		var pos = readPos;
 		while( true ) {
 			var tk = token();
-			
+
 			if( tk == TEof ) {
 				if (preprocStack.length != 0) {
 					error(EInvalidPreprocessor("Unclosed"), pos, pos);

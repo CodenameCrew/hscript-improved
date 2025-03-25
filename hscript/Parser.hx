@@ -2079,7 +2079,7 @@ class Parser {
 	function preprocess( id : String ) : Token {
 		inline function returnToken() {
 			return switch (token()) {
-				case TPrepro(id = "if" | "else" | "elseif" | "end"):
+				case TPrepro(id = "if" | "else" | "elseif" | "end" | "error"):
 					preprocess(id);
 				case t: t;
 			}

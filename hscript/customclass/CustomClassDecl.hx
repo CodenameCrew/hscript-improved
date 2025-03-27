@@ -1,5 +1,6 @@
 package hscript.customclass;
 
+import hscript.proxy.ProxyType;
 import hscript.customclass.utils.FunctionUtils;
 import haxe.Constraints.Function;
 import hscript.Expr.FieldDecl;
@@ -13,8 +14,11 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 	public var imports:Map<String, CustomClassImport>;
 	public var usings:Array<String>;
 	public var pkg:Null<Array<String>> = null;
+	public var ogInterp:Interp = null;
 
 	public var staticInterp:Interp = new Interp();
+
+	public var superClassDecl(default, null):Dynamic = null; //This holds the super class reference. 
 
 	var _cachedStaticFields:Map<String, FieldDecl> = [];
 	var _cachedStaticFunctions:Map<String, FunctionDecl> = [];
@@ -22,14 +26,51 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 	public var __allowSetGet:Bool = true;
 
-	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, pkg:Null<Array<String>>) {
+	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, pkg:Null<Array<String>>, ogInterp:Interp = null) {
 		this.classDecl = classDecl;
 		this.imports = imports;
 		this.usings = usings;
 		this.pkg = pkg;
+		this.ogInterp = ogInterp;
 
+		if(ogInterp != null && ogInterp.importFailedCallback != null && ogInterp.errorHandler != null) {
+			staticInterp.importFailedCallback = ogInterp.importFailedCallback;
+			staticInterp.errorHandler = ogInterp.errorHandler;
+			staticInterp.allowStaticVariables = ogInterp.allowStaticVariables;
+			staticInterp.staticVariables = ogInterp.staticVariables;
+		}
+
+		cacheImports();
 		cacheFields();
 		processUsings();
+		if(classDecl.extend != null)
+			buildSuperClass();
+	}
+
+	function cacheImports() {
+		// This will make imported classes available for Static Functions
+		for(i => imp in imports) {
+			var importedClass = imp.fullPath;
+			var importAlias = imp.as;
+
+			if (Interp.customClassExist(importedClass) && this.staticInterp.importFailedCallback != null) {
+				this.staticInterp.importFailedCallback(importedClass.split("."), importAlias);
+				continue;
+			}
+
+			#if hscriptPos
+			var e:Expr = {
+				e: ExprDef.EImport(importedClass, importAlias),
+				pmin: 0,
+				pmax: 0,
+				origin: this.className,
+				line: i
+			};
+			#else
+			var e = Expr.EImport(importedClass, importAlias);
+			#end
+			this.staticInterp.expr(e);
+		}
 	}
 
 	function cacheFields() {
@@ -67,6 +108,17 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 		for(us in usings) {
 			this.staticInterp.useUsing(us);
 		}
+	}
+
+	function buildSuperClass() {
+		var extendString = new Printer().typeToString(classDecl.extend);
+		if (this.pkg != null && extendString.indexOf(".") == -1) {
+			extendString = this.pkg.join(".") + "." + extendString;
+		}
+
+		superClassDecl = ProxyType.resolveClass(extendString);
+		if(superClassDecl == null)
+			staticInterp.error(ECustom("could not resolve super class: " + extendString));
 	}
 
 	public function callFunction(name:String, ?args:Array<Dynamic>):Dynamic {

@@ -23,16 +23,12 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 	public var superClass:Dynamic;
 	public var superConstructor(default, null):Dynamic;
-
+	// TODO: move this to CustomClassDecl
 	public var className(get, never):String;
 	private function get_className():String {
-		// TODO: simplify this
-		var name = "";
-		if (__class.pkg != null) {
-			name += __class.pkg.join(".");
-		}
-		name += __class.classDecl.name;
-		return name;
+		var pkg = __class.pkg != null ? '${__class.pkg.join(".")}.' : "";
+		var name = __class.classDecl.name;
+		return '$pkg$name';
 	}
 
 	private var __class:CustomClassDecl;
@@ -128,6 +124,17 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		if (args == null)
 			args = [];
 
+		if(__class.superClassDecl is CustomClassDecl)
+			superClass = new CustomClass(__class.superClassDecl, args, _cachedFieldDecls, this.interp);
+		else {
+			if (_cachedSuperFields != null) {
+				Reflect.setField(__class.superClassDecl, "__cachedFields", _cachedSuperFields); // Static field
+			}
+			superClass = Type.createInstance(__class.superClassDecl, args);
+			superClass.__customClass = this;
+			superClass.__real_fields = Type.getInstanceFields(__class.superClassDecl);
+		}
+		/*
 		var extendString = new Printer().typeToString(__class.classDecl.extend);
 		if (__class.pkg != null && extendString.indexOf(".") == -1) {
 			extendString = __class.pkg.join(".") + "." + extendString;
@@ -149,6 +156,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			superClass.__customClass = this;
 			superClass.__real_fields = Type.getInstanceFields(c);
 		}
+		*/
 	}
 
 	function buildImports() {

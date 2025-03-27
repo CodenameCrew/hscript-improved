@@ -1881,7 +1881,8 @@ class Interp {
 						classDecl: classDecl,
 						imports: imports,
 						usings: usings,
-						pkg: pkg
+						pkg: pkg,
+						ogInterp: this
 					}
 					//customClassDecl.cacheFields();
 					registerCustomClass(customClassDecl, !regAlias ? as : null, _inCustomClass);

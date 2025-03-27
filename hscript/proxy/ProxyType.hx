@@ -7,6 +7,8 @@ import hscript.Tools.EnumValue as HScriptEnumValue;
 
 abstract OneOfTwo<T1, T2>(Dynamic) from T1 from T2 to T1 to T2 {}
 
+@:allow(hscript.customclass.CustomClass)
+@:allow(hscript.customclass.CustomClassDecl)
 class ProxyType {
 	/**
 		Returns the class of `o`, if `o` is a class instance.
@@ -49,9 +51,11 @@ class ProxyType {
 
 		In general, type parameter information cannot be obtained at runtime.
 	**/
-	inline static function getSuperClass(c:Class<Dynamic>):Class<Dynamic> {
-		// TODO: SuperClass declaration on CustomClassDecl instead of CustomClass
-		return Type.getSuperClass(c);
+	inline static function getSuperClass(c:OneOfTwo<Class<Dynamic>, CustomClassDecl>):Dynamic {
+		if(c is CustomClassDecl) {
+			return cast(c, CustomClassDecl).superClassDecl;
+		}
+		return Type.getSuperClass(cast c);
 	}
 
 	/**
@@ -73,9 +77,8 @@ class ProxyType {
 		if(c is CustomClassDecl) {
 			var cls:CustomClassDecl = cast c;
 			var name = cls.classDecl.name;
-			if(cls.pkg != null)
-				name = cls.pkg.join('.') + name;
-			return name;
+			var pkg = cls.pkg != null ? '${cls.pkg.join(".")}.' : "";
+			return '$pkg$name';
 		}
 		return Type.getClassName(cast c);
 	}
@@ -115,7 +118,6 @@ class ProxyType {
 		The class name must not include any type parameters.
 	**/
 	inline static function resolveClass(name:String):Dynamic {
-		// Dynamic to no mess with casting
 		if(Interp.customClassExist(name)) {
 			return Interp.getCustomClass(name);
 		}
@@ -350,13 +352,13 @@ class ProxyType {
 
 		If `e` is null, the result is unspecified.
 	**/
-	inline static function allEnums<T>(e:Enum<T>):Array<T> {
+	inline static function allEnums<T>(e:OneOfTwo<Enum<T>, HScriptEnum>):Array<T> {
 		// TODO: SUPPORT HSCRIPT ENUMS
 		var isScripted:Bool = Std.isOfType(e, HScriptEnum);
 		if(isScripted) {
 			var hEnum:HScriptEnum = cast e;
 			return [for(en in Reflect.fields(hEnum.enumValues)) Reflect.field(hEnum, en)];
 		}
-		return Type.allEnums(e);
+		return Type.allEnums(cast e);
 	}
 }

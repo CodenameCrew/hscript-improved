@@ -49,7 +49,8 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 	function cacheImports() {
 		// This will make imported classes available for Static Functions
-		for(i => imp in imports) {
+		var i:Int = 0;
+		for(s => imp in imports) {
 			var importedClass = imp.fullPath;
 			var importAlias = imp.as;
 
@@ -63,9 +64,10 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 				e: ExprDef.EImport(importedClass, importAlias),
 				pmin: 0,
 				pmax: 0,
-				origin: this.className,
+				origin: this.classDecl.name,
 				line: i
 			};
+			i++;
 			#else
 			var e = Expr.EImport(importedClass, importAlias);
 			#end

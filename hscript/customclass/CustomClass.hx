@@ -38,7 +38,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	private var _cachedFunctionDecls:Map<String, FunctionDecl> = null;
 	private var _cachedVarDecls:Map<String, VarDecl> = null;
 
-	public var __allowSetGet:Bool = true;
+	public var __allowSetGet:Bool = false;
 
 	public function new(__class:CustomClassDecl, args:Array<Dynamic>, ?extendFieldDecl:Map<String, Dynamic>, ?ogInterp:Interp, ?callNew:Bool = true) {
 		this.__class = __class;
@@ -49,6 +49,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			interp.errorHandler = ogInterp.errorHandler;
 			interp.allowStaticVariables = ogInterp.allowStaticVariables;
 			interp.staticVariables = ogInterp.staticVariables;
+			// todo: make it so you can use variables from the same scope as where the class was defined
 		}
 
 		buildImports();
@@ -83,6 +84,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			_cachedFieldDecls.set(f.name, f);
 			switch (f.kind) {
 				case KFunction(fn):
+					if(f.name.startsWith('set_') || f.name.startsWith('get_'))
+						__allowSetGet = true;
 					_cachedFunctionDecls.set(f.name, fn);
 					#if hscriptPos
 					var fexpr:Expr = {
@@ -160,7 +163,6 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	}
 
 	function buildImports() {
-		// TODO: implement Alias imports
 		var i:Int = 0;
 		for (_import in __class.imports) {
 			var importedClass = _import.fullPath;
@@ -267,7 +269,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	}
 
 	var __superClassFieldList:Array<String> = null;
-
+	// TODO: superHasField when it extends another Custom Class
 	public function superHasField(name:String):Bool {
 		if (superClass == null)
 			return false;
@@ -417,5 +419,28 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 				}
 		}
 		return null;
+	}
+
+	/**
+	 * Returns the real superClass if the Custom Class
+	 * extends another Custom Class, and so on until
+	 * it reaches a real class, otherwise it will
+	 * return the last fetched Custom Class
+	 * @return Null<Dynamic>
+	 */
+	public function getSuperclass():Null<Dynamic> {
+		var cls:Null<Dynamic> = this.superClass;
+
+		// Check if the superClass is another custom class,
+		// so it will find for a real class, otherwise
+		// returns the last super CustomClass parent.
+		while(cls != null && cls is CustomClass) {
+			var next = cast(cls, CustomClass).superClass;
+			if(next == null)
+				break; // Return the Custom Class itself
+			cls = next;
+		}
+
+		return cls;
 	}
 }

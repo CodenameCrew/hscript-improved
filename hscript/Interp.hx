@@ -977,8 +977,10 @@ class Interp {
 											case EIdent(id0):
 												var ident = resolve(id0);
 												if (ident is CustomClass) {
-													var customClass:CustomClass = cast ident; // Pass the underlying superclass if exist
-													actualArgs.push(customClass.superClass != null ? customClass.superClass : customClass);
+													// Pass the underlying superclass if exist
+													var customClass:CustomClass = cast ident;
+													var objectToPush = customClass.superClass != null ? customClass.getSuperclass() : customClass;
+													actualArgs.push(objectToPush);
 												} else {
 													actualArgs.push(ident);
 												}

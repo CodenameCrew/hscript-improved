@@ -780,6 +780,11 @@ class Interp {
 		return className;
 	}
 
+	// Workaround for parsing custom classes if made inside of a script file
+	public var localImports:Map<String, CustomClassImport> = new Map();
+	public var localParsedClasses:Array<String> = []; // Prevents duplicated classes
+	public var newCustomClass:Bool = true; // Temporary
+
 	public function expr(e:Expr):Dynamic {
 		#if hscriptPos
 		curExpr = e;
@@ -788,16 +793,95 @@ class Interp {
 		switch (e) {
 			case EIgnore(_):
 			case EClass(name, fields, extend, interfaces): //Not sure if leave the old system or implement the new one.
-				if (customClasses.exists(name))
-					error(EAlreadyExistingClass(name));
-
 				inline function importVar(thing:String):String {
 					if (thing == null)
 						return null;
 					final variable:Class<Any> = variables.exists(thing) ? cast variables.get(thing) : null;
 					return variable == null ? thing : Type.getClassName(variable);
 				}
-				customClasses.set(name, new CustomClassHandler(this, name, fields, importVar(extend), [for (i in interfaces) importVar(i)]));
+
+				if (!newCustomClass) {
+					if (customClasses.exists(name))
+						error(EAlreadyExistingClass(name));
+					
+					trace("WARNING: Old Custom Class system marked for removal.\n'newCustomClass = true' to use the new system (EXPERIMENTAL)");
+					customClasses.set(name, new CustomClassHandler(this, name, fields, importVar(extend), [for (i in interfaces) importVar(i)]));
+					return null;
+				}
+
+				// New Custom Class system
+			
+				if (localParsedClasses.contains(name))
+					error(EAlreadyExistingClass(name));
+
+				var customClassFields:Array<FieldDecl> = [];
+				for (f in fields) {
+					switch (Tools.expr(f)) {
+						case EFunction(args, e, name, ret, isPublic, isStatic, isOverride, isPrivate, isFinal, isInline):
+							var fnAcc:Array<FieldAccess> = [];
+							if (isPublic) fnAcc.push(APublic);
+							if (isStatic) fnAcc.push(AStatic);
+							if (isOverride) fnAcc.push(AOverride);
+
+							var fnd:FunctionDecl = {
+								args: args,
+								body: e,
+								ret: ret
+							};
+							var fd:FieldDecl = {
+								name: name,
+								meta: [],
+								kind: KFunction(fnd),
+								access: fnAcc
+							};
+
+							customClassFields.push(fd);
+						case EVar(n, t, e, isPublic, isStatic, isPrivate, isFinal, isInline):
+							var varAcc:Array<FieldAccess> = [];
+							if (isPublic) varAcc.push(APublic);
+							if (isStatic) varAcc.push(AStatic);
+
+							var vrd:VarDecl = {
+								get: null,
+								set: null,
+								expr: e,
+								type: t
+							};
+							var fd:FieldDecl = {
+								name: n,
+								meta: [],
+								kind: KVar(vrd),
+								access: varAcc
+							};
+
+							customClassFields.push(fd);
+						default:
+					}
+				}
+
+				var extendPath:Null<CType> = extend != null ? CTPath(importVar(extend).split(".")) : null;
+				var interfacesPaths:Array<CType> = [for (i in interfaces) CTPath(importVar(i).split("."))];
+
+				var classDecl:ClassDecl = {
+					name: name,
+					params: {}, // TODO: make it parse and ignore it
+					meta: [],
+					isPrivate: false,
+					extend: extendPath,
+					implement: interfacesPaths,
+					fields: customClassFields,
+					isExtern: false,
+				};
+
+				var customClassDecl:CustomClassDecl = {
+					classDecl: classDecl,
+					imports: localImports,
+					usings: [for(u in this.usings) u.name],
+					pkg: null
+				};
+
+				registerCustomClass(customClassDecl, null);
+				localParsedClasses.push(customClassDecl.classDecl.name);
 			case EImport(c, n):
 				if (!importEnabled)
 					return null;
@@ -807,6 +891,13 @@ class Interp {
 				var toSetName = n != null ? n : claVarName;
 				var oldClassName = realClassName;
 				var oldSplitName = splitClassName.copy();
+
+				var customImport:CustomClassImport = {
+					name: claVarName,
+					pkg: splitClassName,
+					fullPath: realClassName
+				};
+				localImports.set(customImport.name, customImport);
 
 				if (variables.exists(toSetName)) // class is already imported
 					return null;

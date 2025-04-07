@@ -4,6 +4,7 @@ import hscript.Interp.DeclaredVar;
 import hscript.utils.UnsafeReflect;
 using StringTools;
 
+@:deprecated('Switch to new Custom Class instead')
 class CustomClassHandler implements IHScriptCustomConstructor {
 	public static var staticHandler = new StaticHandler();
 

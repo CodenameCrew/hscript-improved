@@ -222,6 +222,8 @@ typedef VarDecl = {
 	var type : Null<CType>;
 }
 
+typedef TypeParamDecl = {};
+
 enum EnumType {
 	ESimple(name: String);
 	EConstructor(name: String, args: Array<Argument>);

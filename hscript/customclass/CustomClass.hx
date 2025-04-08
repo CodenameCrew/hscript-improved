@@ -44,12 +44,16 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		this.__class = __class;
 		this.interp = new Interp(this);
 
-		if (ogInterp != null && ogInterp.importFailedCallback != null && ogInterp.errorHandler != null) {
+		if (ogInterp != null) {
 			interp.importFailedCallback = ogInterp.importFailedCallback;
 			interp.errorHandler = ogInterp.errorHandler;
 			interp.allowStaticVariables = ogInterp.allowStaticVariables;
 			interp.staticVariables = ogInterp.staticVariables;
 			// todo: make it so you can use variables from the same scope as where the class was defined
+			if(__class.usePublicVars) {
+				interp.allowPublicVariables = __class.staticInterp.allowPublicVariables;
+				interp.publicVariables = __class.staticInterp.publicVariables;
+			}
 		}
 
 		buildImports();

@@ -14,7 +14,8 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 	public var imports:Map<String, CustomClassImport>;
 	public var usings:Array<String>;
 	public var pkg:Null<Array<String>> = null;
-	public var ogInterp:Interp = null;
+	public var ogInterp:Null<Interp> = null;
+	public var usePublicVars:Null<Bool> = null;
 
 	public var staticInterp:Interp = new Interp();
 
@@ -26,18 +27,27 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 	public var __allowSetGet:Bool = true;
 
-	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, pkg:Null<Array<String>>, ogInterp:Interp = null) {
+	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, ?pkg:Array<String>, ?ogInterp:Interp, ?usePublicVars:Bool) {
 		this.classDecl = classDecl;
 		this.imports = imports;
 		this.usings = usings;
 		this.pkg = pkg;
 		this.ogInterp = ogInterp;
+		this.usePublicVars = usePublicVars;
 
-		if(ogInterp != null && ogInterp.importFailedCallback != null && ogInterp.errorHandler != null) {
+		if(ogInterp != null) {
 			staticInterp.importFailedCallback = ogInterp.importFailedCallback;
 			staticInterp.errorHandler = ogInterp.errorHandler;
 			staticInterp.allowStaticVariables = ogInterp.allowStaticVariables;
 			staticInterp.staticVariables = ogInterp.staticVariables;
+
+			if(usePublicVars != null && usePublicVars) {
+				// uses public variables from the same scope as where the class was defined
+				staticInterp.allowPublicVariables = ogInterp.allowPublicVariables;
+				staticInterp.publicVariables = ogInterp.publicVariables;
+			}
+
+			// TODO: use normal variables, not just public
 		}
 
 		cacheImports();

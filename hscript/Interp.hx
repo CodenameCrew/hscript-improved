@@ -804,7 +804,7 @@ class Interp {
 					if (customClasses.exists(name))
 						error(EAlreadyExistingClass(name));
 					
-					trace("WARNING: Old Custom Class system marked for removal.\n'newCustomClass = true' to use the new system (EXPERIMENTAL)");
+					trace("WARNING: Old Custom Class system marked for removal.\n'newCustomClass = true' to use the new system (STILL IN DEVELOPMENT)");
 					customClasses.set(name, new CustomClassHandler(this, name, fields, importVar(extend), [for (i in interfaces) importVar(i)]));
 					return null;
 				}
@@ -877,7 +877,9 @@ class Interp {
 					classDecl: classDecl,
 					imports: localImports,
 					usings: [for(u in this.usings) u.name],
-					pkg: null
+					pkg: null,
+					ogInterp: this,
+					usePublicVars: true
 				};
 
 				registerCustomClass(customClassDecl, null);

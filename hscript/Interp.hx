@@ -879,7 +879,7 @@ class Interp {
 					usings: [for(u in this.usings) u.name],
 					pkg: null,
 					ogInterp: this,
-					usePublicVars: true
+					isInline: true
 				};
 
 				registerCustomClass(customClassDecl, null);
@@ -1182,7 +1182,7 @@ class Interp {
 					me.depth = depth;
 					return r;
 				};
-				var f = Reflect.makeVarArgs(f);
+				var f:Function = Reflect.makeVarArgs(f);
 				if (name != null) {
 					if (depth == 0) {
 						// global function

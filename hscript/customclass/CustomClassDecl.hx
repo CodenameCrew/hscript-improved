@@ -15,7 +15,7 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 	public var usings:Array<String>;
 	public var pkg:Null<Array<String>> = null;
 	public var ogInterp:Null<Interp> = null;
-	public var usePublicVars:Null<Bool> = null;
+	public var isInline:Null<Bool> = null;
 
 	public var staticInterp:Interp = new Interp();
 
@@ -27,13 +27,13 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 	public var __allowSetGet:Bool = true;
 
-	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, ?pkg:Array<String>, ?ogInterp:Interp, ?usePublicVars:Bool) {
+	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, ?pkg:Array<String>, ?ogInterp:Interp, ?isInline:Bool) {
 		this.classDecl = classDecl;
 		this.imports = imports;
 		this.usings = usings;
 		this.pkg = pkg;
 		this.ogInterp = ogInterp;
-		this.usePublicVars = usePublicVars;
+		this.isInline = isInline;
 
 		if(ogInterp != null) {
 			staticInterp.importFailedCallback = ogInterp.importFailedCallback;
@@ -41,13 +41,12 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 			staticInterp.allowStaticVariables = ogInterp.allowStaticVariables;
 			staticInterp.staticVariables = ogInterp.staticVariables;
 
-			if(usePublicVars != null && usePublicVars) {
+			if(isInline != null && isInline) {
 				// uses public variables from the same scope as where the class was defined
+				staticInterp.variables = ogInterp.variables;
 				staticInterp.allowPublicVariables = ogInterp.allowPublicVariables;
 				staticInterp.publicVariables = ogInterp.publicVariables;
 			}
-
-			// TODO: use normal variables, not just public
 		}
 
 		cacheImports();
@@ -63,6 +62,8 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 		for(s => imp in imports) {
 			var importedClass = imp.fullPath;
 			var importAlias = imp.as;
+
+			if(this.staticInterp.variables.exists(imp.name)) continue; // class is already imported
 
 			if (Interp.customClassExist(importedClass) && this.staticInterp.importFailedCallback != null) {
 				this.staticInterp.importFailedCallback(importedClass.split("."), importAlias);

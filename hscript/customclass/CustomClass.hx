@@ -40,6 +40,9 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 	public var __allowSetGet:Bool = false;
 
+	private var isInline:Bool = false;
+	private var ogVariables:Map<String, Dynamic>;
+
 	public function new(__class:CustomClassDecl, args:Array<Dynamic>, ?extendFieldDecl:Map<String, Dynamic>, ?ogInterp:Interp, ?callNew:Bool = true) {
 		this.__class = __class;
 		this.interp = new Interp(this);
@@ -50,7 +53,9 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			interp.allowStaticVariables = ogInterp.allowStaticVariables;
 			interp.staticVariables = ogInterp.staticVariables;
 			// todo: make it so you can use variables from the same scope as where the class was defined
-			if(__class.usePublicVars) {
+			if(__class.isInline != null && __class.isInline) {
+				isInline = __class.isInline;
+				ogVariables = ogInterp.variables;
 				interp.allowPublicVariables = __class.staticInterp.allowPublicVariables;
 				interp.publicVariables = __class.staticInterp.publicVariables;
 			}
@@ -131,15 +136,25 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		if (args == null)
 			args = [];
 
-		if(__class.superClassDecl is CustomClassDecl)
+		// TODO: disallow copy for super Custom Class 
+		if(__class.superClassDecl is CustomClassDecl) 
 			superClass = new CustomClass(__class.superClassDecl, args, _cachedFieldDecls, this.interp);
 		else {
 			if (_cachedSuperFields != null) {
 				Reflect.setField(__class.superClassDecl, "__cachedFields", _cachedSuperFields); // Static field
 			}
+
+			var disallowCopy = Type.getInstanceFields(__class.superClassDecl);
+
 			superClass = Type.createInstance(__class.superClassDecl, args);
 			superClass.__customClass = this;
-			superClass.__real_fields = Type.getInstanceFields(__class.superClassDecl);
+			superClass.__real_fields = disallowCopy;
+
+			if(isInline) {
+				for(s => v in ogVariables)
+					if(!disallowCopy.contains(s))
+						interp.variables.set(s, v);
+			}
 		}
 		/*
 		var extendString = new Printer().typeToString(__class.classDecl.extend);

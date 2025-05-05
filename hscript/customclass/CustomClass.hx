@@ -14,6 +14,9 @@ using StringTools;
  * The Custom Class core.
  * 
  * Provides handlers for custom classes.
+ * 
+ * Rest in peace, CustomClassHandler.hx
+ * 
  * Based on Polymod Hscript class system
  * @see https://github.com/larsiusprime/polymod/tree/master/polymod/hscript/_internal
  */
@@ -23,20 +26,18 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 	public var superClass:Dynamic;
 	public var superConstructor(default, null):Dynamic;
-	// TODO: move this to CustomClassDecl
+
 	public var className(get, never):String;
 	private function get_className():String {
-		var pkg = __class.pkg != null ? '${__class.pkg.join(".")}.' : "";
-		var name = __class.classDecl.name;
-		return '$pkg$name';
+		return __class.toString();
 	}
 
 	private var __class:CustomClassDecl;
-	private var _cachedSuperFields:Null<Map<String, Dynamic>> = null;
+	private var __cachedSuperFields:Null<Map<String, Dynamic>> = null;
 
-	private var _cachedFieldDecls:Map<String, FieldDecl> = null;
-	private var _cachedFunctionDecls:Map<String, FunctionDecl> = null;
-	private var _cachedVarDecls:Map<String, VarDecl> = null;
+	private var __cachedFieldDecls:Map<String, FieldDecl> = null;
+	private var __cachedFunctionDecls:Map<String, FunctionDecl> = null;
+	private var __cachedVarDecls:Map<String, VarDecl> = null;
 
 	public var __allowSetGet:Bool = false;
 
@@ -65,7 +66,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		buildUsings();
 
 		if (extendFieldDecl != null)
-			_cachedSuperFields = extendFieldDecl;
+			__cachedSuperFields = extendFieldDecl;
 
 		buildClass();
 
@@ -80,22 +81,22 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	}
 
 	function buildClass() {
-		_cachedFieldDecls = [];
-		_cachedFunctionDecls = [];
-		_cachedVarDecls = [];
+		__cachedFieldDecls = [];
+		__cachedFunctionDecls = [];
+		__cachedVarDecls = [];
 
-		if (_cachedSuperFields == null)
-			_cachedSuperFields = [];
+		if (__cachedSuperFields == null)
+			__cachedSuperFields = [];
 
 		for (f in __class.classDecl.fields) {
 			if (f.access.contains(AStatic))
 				continue; // Skip static field. It's handled by CustomClassDecl.hx
-			_cachedFieldDecls.set(f.name, f);
+			__cachedFieldDecls.set(f.name, f);
 			switch (f.kind) {
 				case KFunction(fn):
 					if(f.name.startsWith('set_') || f.name.startsWith('get_'))
 						__allowSetGet = true;
-					_cachedFunctionDecls.set(f.name, fn);
+					__cachedFunctionDecls.set(f.name, fn);
 					#if hscriptPos
 					var fexpr:Expr = {
 						e: ExprDef.EFunction(fn.args, fn.body, f.name, fn.ret, false, false),
@@ -110,7 +111,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 					var f0 = this.interp.expr(fexpr);
 					this.interp.variables.set(f.name, f0);
 				case KVar(v):
-					_cachedVarDecls.set(f.name, v);
+					__cachedVarDecls.set(f.name, v);
 					if (v.expr != null) {
 						var varValue = this.interp.expr(v.expr);
 						this.interp.variables.set(f.name, varValue);
@@ -118,11 +119,11 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			}
 		}
 
-		if (!_cachedSuperFields.empty()) {
-			for (f => v in _cachedSuperFields) {
+		if (!__cachedSuperFields.empty()) {
+			for (f => v in __cachedSuperFields) {
 				this.hset(f, v);
 			}
-			_cachedSuperFields.clear();
+			__cachedSuperFields.clear();
 		}
 	}
 
@@ -132,16 +133,16 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		});
 	}
 
-	private function createSuperClass(args:Array<Dynamic> = null) {
+	private function createSuperClass(?args:Array<Dynamic>) {
 		if (args == null)
 			args = [];
 
 		// TODO: disallow copy for super Custom Class 
 		if(__class.superClassDecl is CustomClassDecl) 
-			superClass = new CustomClass(__class.superClassDecl, args, _cachedFieldDecls, this.interp);
+			superClass = new CustomClass(__class.superClassDecl, args, __cachedFieldDecls, this.interp);
 		else {
-			if (_cachedSuperFields != null) {
-				Reflect.setField(__class.superClassDecl, "__cachedFields", _cachedSuperFields); // Static field
+			if (__cachedSuperFields != null) {
+				Reflect.setField(__class.superClassDecl, "__cachedFields", __cachedSuperFields); // Static field
 			}
 
 			var disallowCopy = Type.getInstanceFields(__class.superClassDecl);
@@ -231,7 +232,6 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			}
 		} else {
 			var fixedArgs = [];
-			// OVERRIDE CHANGE: Use _HX_SUPER__ when calling superclass
 			var fixedName = '_HX_SUPER__${name}';
 			for (a in args) {
 				if ((a is CustomClass)) {
@@ -255,23 +255,23 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	// Field check
 
 	private function hasField(name:String):Bool {
-		return _cachedFieldDecls != null ? _cachedFieldDecls.exists(name) : false;
+		return __cachedFieldDecls != null ? __cachedFieldDecls.exists(name) : false;
 	}
 
 	private function getField(name:String):FieldDecl {
-		return _cachedFieldDecls != null ? _cachedFieldDecls.get(name) : null;
+		return __cachedFieldDecls != null ? __cachedFieldDecls.get(name) : null;
 	}
 
 	private function hasVar(name:String):Bool {
-		return _cachedVarDecls != null ? _cachedVarDecls.exists(name) : false;
+		return __cachedVarDecls != null ? __cachedVarDecls.exists(name) : false;
 	}
 
 	private function getVar(name:String):VarDecl {
-		return _cachedVarDecls != null ? _cachedVarDecls.get(name) : null;
+		return __cachedVarDecls != null ? __cachedVarDecls.get(name) : null;
 	}
 
 	private function hasFunction(name:String):Bool {
-		return _cachedFunctionDecls != null ? _cachedFunctionDecls.exists(name) : false;
+		return __cachedFunctionDecls != null ? __cachedFunctionDecls.exists(name) : false;
 	}
 
 	private function getFunction(name:String):Function {
@@ -282,8 +282,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	// SuperClass field check
 
 	private function cacheSuperField(name:String, value:Dynamic) {
-		if (_cachedSuperFields != null) {
-			_cachedSuperFields.set(name, value);
+		if (__cachedSuperFields != null) {
+			__cachedSuperFields.set(name, value);
 		}
 	}
 
@@ -307,8 +307,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	 * @param name The name of the function to remove from the cache.
 	 */
 	private function purgeFunction(name:String):Void {
-		if (_cachedFunctionDecls != null) {
-			_cachedFunctionDecls.remove(name);
+		if (__cachedFunctionDecls != null) {
+			__cachedFunctionDecls.remove(name);
 		}
 	}
 

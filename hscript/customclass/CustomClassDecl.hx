@@ -7,6 +7,10 @@ import hscript.Expr.FieldDecl;
 import hscript.Expr.VarDecl;
 import hscript.Expr.FunctionDecl;
 
+/**
+ * The ACTUAL "StaticHandler"
+ * @author Jamextreme140
+ */
 @:access(hscript.Interp)
 @:structInit
 class CustomClassDecl implements IHScriptCustomAccessBehaviour {
@@ -129,7 +133,12 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 			extendString = this.pkg.join(".") + "." + extendString;
 		}
 
-		superClassDecl = ProxyType.resolveClass(extendString);
+		var cls:Dynamic = Type.resolveClass('${extendString}_HSX');
+		if(cls == null)
+			cls = ProxyType.resolveClass(extendString);
+
+		superClassDecl = cls;
+		
 		if(superClassDecl == null)
 			staticInterp.error(ECustom("could not resolve super class: " + extendString));
 	}
@@ -233,6 +242,12 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 		var r = callFunction('set_${name}', [val]);
 		__allowSetGet = true;
 		return r;
+	}
+	
+	public function toString():String {
+		var pkg = pkg != null ? '${pkg.join(".")}.' : "";
+		var name = classDecl.name;
+		return '$pkg$name';
 	}
 }
 

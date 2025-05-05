@@ -194,7 +194,7 @@ class ProxyType {
         var isScripted:Bool = Std.isOfType(e, HScriptEnum);
         if(isScripted) {
             var scriptEnum:HScriptEnum = cast e;
-            var enumToCreate = scriptEnum.getEnum(constr);
+            var enumToCreate = scriptEnum.getEnumValue(constr);
             if(Reflect.isFunction(enumToCreate)) {
                 return Reflect.callMethod(null, enumToCreate, params);
             }

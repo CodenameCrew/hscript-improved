@@ -1575,6 +1575,13 @@ class Parser {
 			push(tk);
 			decls.push(parseModuleDecl());
 		}
+		haxe.ds.ArraySort.sort(decls, (m1, m2) -> {
+			var i1 = Type.enumIndex(m1);
+			var i2 = Type.enumIndex(m2);
+
+			if(i1 > i2) return 0;
+			return -1;
+		});
 		return decls;
 	}
 

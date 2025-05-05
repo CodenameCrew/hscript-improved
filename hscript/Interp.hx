@@ -1367,7 +1367,6 @@ class Interp {
 				for (index => field in fields) {
 					switch (field) {
 						case ESimple(name):
-							//Reflect.setField(obj, name, new Tools.EnumValue(enumName, name, index, obj, null));
 							obj.setEnum(name, new EnumValue(enumName, name, index, obj, null));
 						case EConstructor(name, params):
 							var hasOpt = false, minParams = 0;
@@ -1403,11 +1402,9 @@ class Interp {
 							};
 							var f = Reflect.makeVarArgs(f);
 
-							//Reflect.setField(obj, name, f);
 							obj.setEnum(name, f);
 					}
 				}
-
 				variables.set(enumName, obj);
 		}
 		return null;
@@ -1949,6 +1946,25 @@ class Interp {
 					imports.set(hasAlias ? asname : importedClass.name, importedClass);
 				case DUsing(path): 
 					usings.push(path.join("."));
+				case DTypedef(td):
+					switch(td.t) {
+						case CTPath(path, params):
+							if (params != null && params.length > 1)
+								error(ECustom("Typedefs can't have parameters"));
+							if (path.length < 1)
+								error(ECustom("Typedefs can't be empty"));
+
+							var last = path[path.length - 1];
+
+							var importedClass:CustomClassImport = {
+								name: last,
+								pkg: [for (e in path) e.trim()],
+								fullPath: path.join("."),
+								as: td.name
+							}
+							imports.set(td.name, importedClass);
+						default:
+					}
 				case DClass(c):
 					var extend = c.extend;
 					if (extend != null) {
@@ -1982,8 +1998,6 @@ class Interp {
 					//customClassDecl.cacheFields();
 					registerCustomClass(customClassDecl, !regAlias ? as : null, _inCustomClass);
 					if(as != null) regAlias = true;
-				case DTypedef(td):
-					// TODO: put this work
 			}
 		}
 	}

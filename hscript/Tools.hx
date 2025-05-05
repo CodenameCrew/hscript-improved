@@ -223,27 +223,25 @@ class EnumValue {
 	}
 }
 
-class HScriptEnum implements IHScriptCustomBehaviour{
+class HScriptEnum implements IHScriptCustomBehaviour {
 	public var enumValues(default, null) = {};
 
 	public function new() {}
 
 	public function setEnum(name:String, enumValue:Dynamic) {
-		//enumValues.set(name, enumValue);
 		Reflect.setField(enumValues, name, enumValue);
 	}
 
-	public function getEnum(name:String):Null<Dynamic> {
-		//if(enumValues.exists(name)) return enumValues.get(name);
+	public function getEnumValue(name:String):Null<Dynamic> {
 		if(Reflect.hasField(enumValues, name)) return Reflect.field(enumValues, name);
 		return null;
 	}
 
 	public function hget(name:String):Dynamic {
-		return getEnum(name);
+		return getEnumValue(name);
 	}
 
 	public function hset(name:String, val:Dynamic):Dynamic {
-		throw new haxe.exceptions.NotImplementedException();
+		return null;
 	}
 }

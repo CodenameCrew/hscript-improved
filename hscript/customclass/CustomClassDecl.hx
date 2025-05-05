@@ -50,8 +50,8 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 		}
 
 		cacheImports();
-		cacheFields();
 		processUsings();
+		cacheFields();
 		if(classDecl.extend != null)
 			buildSuperClass();
 	}

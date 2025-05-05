@@ -1847,7 +1847,7 @@ class Interp {
 				_nextCallObject = null;
 				return r;
 			} catch (e) {
-				error(ECustom('Script threw an exception: \n${f}'));
+				error(ECustom('${_proxy.className} threw an exception: \n${e.details()}'));
 				_nextCallObject = null;
 				return null;
 			}

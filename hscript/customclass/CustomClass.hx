@@ -137,9 +137,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		if (args == null)
 			args = [];
 
-		// TODO: disallow copy for super Custom Class 
 		if(__class.superClassDecl is CustomClassDecl) 
-			superClass = new CustomClass(__class.superClassDecl, args, __cachedFieldDecls, this.interp);
+			superClass = new CustomClass(__class.superClassDecl, args, __cachedSuperFields, this.interp);
 		else {
 			if (__cachedSuperFields != null) {
 				Reflect.setField(__class.superClassDecl, "__cachedFields", __cachedSuperFields); // Static field
@@ -215,7 +214,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		}
 	}
 
-	public function callFunction(name:String, args:Array<Dynamic> = null):Dynamic {
+	public function callFunction(name:String, ?args:Array<Dynamic>):Dynamic {
 		var r:Dynamic = null;
 
 		if (hasField(name)) {
@@ -224,7 +223,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 				if (fn == null)
 					interp.error(ECustom('${name} is not a function'));
 
-				r = UnsafeReflect.callMethodUnsafe(null, fn, args);
+				r = UnsafeReflect.callMethodUnsafe(null, fn, args == null ? [] : args);
 			} catch (e:hscript.Expr.Error) {
 				// A script error occurred while executing the custom class function.
 				// Purge the function from the cache so it is not called again.
@@ -236,7 +235,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			for (a in args) {
 				if ((a is CustomClass)) {
 					var customClass:CustomClass = cast(a, CustomClass).superClass;
-					fixedArgs.push(customClass.superClass != null ? customClass.superClass : customClass);
+					fixedArgs.push(customClass.superClass != null ? customClass.getSuperclass() : customClass);
 				} else {
 					fixedArgs.push(a);
 				}
@@ -295,7 +294,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 		// Reflect.hasField(this, name) is REALLY expensive so we use a cache.
 		if (__superClassFieldList == null) {
-			__superClassFieldList = Reflect.fields(superClass).concat(Type.getInstanceFields(Type.getClass(superClass)));
+			var realFields = Reflect.fields(superClass).concat(Type.getInstanceFields(Type.getClass(superClass)));
+			__superClassFieldList.concat(realFields);
 		}
 
 		return __superClassFieldList.indexOf(name) != -1;
@@ -327,24 +327,27 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 					this.interp.variables.set(name, val);
 				} else if (this.superClass != null) {
+					if (this.superClass is CustomClass) {
+						var superCustomClass:CustomClass = cast(this.superClass, CustomClass);
+						try {
+							superCustomClass.__allowSetGet = this.__allowSetGet;
+							return superCustomClass.hset(name, val);
+						} catch (e:Dynamic) {}
+					}
 					if (Type.getClass(this.superClass) == null) {
 						// Anonymous structure
 						if (Reflect.hasField(this.superClass, name)) {
 							Reflect.setField(this.superClass, name, val);
 						}
 						return val;
-					} else if (this.superClass is CustomClass) {
-						var superCustomClass:CustomClass = cast(this.superClass, CustomClass);
-						try {
-							superCustomClass.__allowSetGet = this.__allowSetGet;
-							return superCustomClass.hset(name, val);
-						} catch (e:Dynamic) {}
-					} else if (superHasField(name)) {
+					} 
+					else if (superHasField(name)) {
 						if (__allowSetGet)
 							Reflect.setProperty(this.superClass, name, val);
 						else
 							Reflect.setField(this.superClass, name, val);
-					} else {
+					} 
+					else {
 						throw "field '" + name + "' does not exist in custom class '" + this.className + "' or super class '"
 							+ Type.getClassName(Type.getClass(this.superClass)) + "'";
 					}
@@ -423,7 +426,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 						try {
 							superCustomClass.__allowSetGet = this.__allowSetGet;
 							return superCustomClass.hget(name);
-						} catch (e:Dynamic) {}
+						} catch (e) {}
 					}
 
 					var fields = Type.getInstanceFields(Type.getClass(this.superClass));

@@ -432,8 +432,28 @@ class Interp {
 		var v;
 		switch (Tools.expr(e1)) {
 			case EIdent(id):
-				var l = locals.get(id);
 				v = fop(expr(e1), expr(e2));
+				// Make sure setting superclass/static fields directly works.
+				// Also ensures property functions are accounted for.
+				if(_inCustomClass) {
+					if (_proxy.__class.hasField(id)) {
+						_proxy.__class.hset(id, v);
+						return v;
+					}
+					else if (_proxy.superClass != null && _proxy.superHasField(id)) {
+						Reflect.setProperty(_proxy.superClass, id, v);
+						return v;
+					}
+					else if (_proxy.hasVar(id)) {
+						_proxy.hset(id, v);
+						return v;
+					}
+					else if ((_proxy.superClass == null && _proxy.__class.classDecl.extend != null)) {
+						_proxy.cacheSuperField(id, v);
+						return v;
+					}
+				}
+				var l = locals.get(id);
 				if (l == null) {
 					if(_hasScriptObject && !varExists(id)) {
 						var instanceHasField = __instanceFields.contains(id);
@@ -495,6 +515,33 @@ class Interp {
 			case EField(e, f, s):
 				var obj = expr(e);
 				if(s && obj == null) return null;
+
+				if(_inCustomClass) {
+					switch(Tools.expr(e)) {
+						case EIdent(_id):
+							if (_id == 'this') {
+								if (_proxy.hasField(f)) {
+									v = fop(get(obj, f), expr(e2));
+									_proxy.hset(f, v);
+									return v;
+								}
+								if (_proxy.superClass != null) {
+									if(_proxy.superHasField(f)) {
+										v = fop(get(obj, f), expr(e2));
+										Reflect.setProperty(_proxy.superClass, f, v);
+										return v;
+									}
+								}
+								else if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null){
+									// Caches the declaration to set it once superClass is created
+									v = fop(get(obj, f), expr(e2));
+									_proxy.cacheSuperField(f, v);
+									return v;
+								}
+							}
+						default:
+					}
+				}
 				v = fop(get(obj, f), expr(e2));
 				v = set(obj, f, v);
 			case EArray(e, index):
@@ -699,16 +746,18 @@ class Interp {
 
 		// Custom Class
 		if (_inCustomClass) {
-			// We are calling a LOCAL function from the same module.
-			if (_proxy.__class.hasField(id)) {
-				// Static access
+			// Static access
+			if (_proxy.__class.hasField(id)) 
 				return _proxy.__class.hget(id);
-			}
+			
+			if (_proxy.hasVar(id)) 
+				return _proxy.hget(id);
+			// We are calling a LOCAL function from the same module.
 			if (_proxy.hasFunction(id)) {
 				_nextCallObject = _proxy;
 				return _proxy.resolveField(id);
 			}
-			else if (_proxy.superHasField(id)) {
+			if (_proxy.superHasField(id)) {
 				_nextCallObject = _proxy.superClass;
 				return Reflect.getProperty(_proxy.superClass, id);
 			} else {

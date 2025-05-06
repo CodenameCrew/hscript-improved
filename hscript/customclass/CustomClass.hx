@@ -229,24 +229,32 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 				// Purge the function from the cache so it is not called again.
 				purgeFunction(name);
 			}
-		} else {
+		} 
+		else {
 			var fixedArgs = [];
-			var fixedName = '_HX_SUPER__${name}';
 			for (a in args) {
 				if ((a is CustomClass)) {
-					var customClass:CustomClass = cast(a, CustomClass).superClass;
+					var customClass:CustomClass = cast(a, CustomClass);
 					fixedArgs.push(customClass.superClass != null ? customClass.getSuperclass() : customClass);
 				} else {
 					fixedArgs.push(a);
 				}
 			}
-			var superFn = Reflect.field(superClass, fixedName);
-			if (superFn == null) {
+			var superFn:Function = null;
+			if(superClass is CustomClass) {
+				superFn = cast(superClass, CustomClass).hget(name);
+			}
+			else {
+				var fixedName = '_HX_SUPER__${name}';
+				superFn = Reflect.field(superClass, fixedName);
+			}
+			
+			if (superFn == null || !Reflect.isFunction(superFn)) {
 				this.interp.error(ECustom('Error while calling function super.${name}(): EInvalidAccess'
 					+ '\n'
 					+ 'InvalidAccess error: Super function "${name}" does not exist! Define it or call the correct superclass function.'));
 			}
-			r = Reflect.callMethod(superClass, superFn, fixedArgs);
+			r = Reflect.callMethod(superClass is CustomClass ? null : superClass, superFn, fixedArgs);
 		}
 		return r;
 	}
@@ -295,7 +303,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		// Reflect.hasField(this, name) is REALLY expensive so we use a cache.
 		if (__superClassFieldList == null) {
 			var realFields = Reflect.fields(superClass).concat(Type.getInstanceFields(Type.getClass(superClass)));
-			__superClassFieldList.concat(realFields);
+			__superClassFieldList = realFields;
 		}
 
 		return __superClassFieldList.indexOf(name) != -1;

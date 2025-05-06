@@ -35,9 +35,9 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	private var __class:CustomClassDecl;
 	private var __cachedSuperFields:Null<Map<String, Dynamic>> = null;
 
-	private var __cachedFieldDecls:Map<String, FieldDecl> = null;
-	private var __cachedFunctionDecls:Map<String, FunctionDecl> = null;
-	private var __cachedVarDecls:Map<String, VarDecl> = null;
+	private var __cachedFieldDecls:Map<String, FieldDecl> = [];
+	private var __cachedFunctionDecls:Map<String, FunctionDecl> = [];
+	private var __cachedVarDecls:Map<String, VarDecl> = [];
 
 	public var __allowSetGet:Bool = false;
 
@@ -81,10 +81,6 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	}
 
 	function buildClass() {
-		__cachedFieldDecls = [];
-		__cachedFunctionDecls = [];
-		__cachedVarDecls = [];
-
 		if (__cachedSuperFields == null)
 			__cachedSuperFields = [];
 
@@ -156,29 +152,6 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 						interp.variables.set(s, v);
 			}
 		}
-		/*
-		var extendString = new Printer().typeToString(__class.classDecl.extend);
-		if (__class.pkg != null && extendString.indexOf(".") == -1) {
-			extendString = __class.pkg.join(".") + "." + extendString;
-		}
-
-		if (Interp.customClassExist(extendString)) {
-			var customSuperClass:CustomClass = new CustomClass(Interp.getCustomClass(extendString), args, _cachedSuperFields, this.interp);
-			superClass = customSuperClass;
-		} else {
-			var c = Type.resolveClass('${extendString}_HSX');
-			if (c == null) {
-				interp.error(ECustom("could not resolve super class: " + extendString));
-			}
-			if (_cachedSuperFields != null) {
-				Reflect.setField(c, "__cachedFields", _cachedSuperFields); // Static field
-			}
-
-			superClass = Type.createInstance(c, args);
-			superClass.__customClass = this;
-			superClass.__real_fields = Type.getInstanceFields(c);
-		}
-		*/
 	}
 
 	function buildImports() {
@@ -254,7 +227,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 					+ '\n'
 					+ 'InvalidAccess error: Super function "${name}" does not exist! Define it or call the correct superclass function.'));
 			}
-			r = Reflect.callMethod(superClass is CustomClass ? null : superClass, superFn, fixedArgs);
+			r = Reflect.callMethod((superClass is CustomClass) ? null : superClass, superFn, fixedArgs);
 		}
 		return r;
 	}
@@ -295,7 +268,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	}
 
 	var __superClassFieldList:Array<String> = null;
-	// TODO: superHasField when it extends another Custom Class
+	
 	public function superHasField(name:String):Bool {
 		if (superClass == null)
 			return false;

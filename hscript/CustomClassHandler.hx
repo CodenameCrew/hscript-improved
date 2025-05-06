@@ -76,7 +76,7 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 			comparisonMap.set(key, value);
 		}
 
-		_class.__custom__variables = interp.variables;
+		//_class.__custom__variables = interp.variables;
 
 		//trace(fields);
 		for(expr in fields) {
@@ -100,21 +100,21 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 		//	}
 		//}
 
-		_class.__class__fields = [for(key => value in classVariables) key];
+		//_class.__class__fields = [for(key => value in classVariables) key];
 
 		//trace(_class.__class__fields);
 		//@:privateAccess
 		//trace(interp.__instanceFields);
 
-		_class.__interp = interp;
-		_class.__allowSetGet = false;
+		//_class.__interp = interp;
+		//_class.__allowSetGet = false;
 		interp.scriptObject = _class;
 
 		for(variable => value in interp.variables) {
 			if(variable == "this" || variable == "super" || variable == "new") continue;
 
 			if(variable.startsWith("set_") || variable.startsWith("get_")) {
-				_class.__allowSetGet = true;
+				//_class.__allowSetGet = true;
 			}
 		}
 
@@ -139,9 +139,11 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 				if(!interp.__instanceFields.contains(variable)) {
 					interp.__instanceFields.push(variable);
 				}
+				/*
 				if(!_class.__class__fields.contains(variable)) {
 					_class.__class__fields.push(variable);
 				}
+				*/
 			}
 		}
 

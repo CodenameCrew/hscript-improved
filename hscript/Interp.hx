@@ -328,17 +328,6 @@ class Interp {
 							UnsafeReflect.setField(scriptObject, id, v);
 							return v;
 						} 
-						/*
-						else if (_scriptObjectType == SCustomClass && instanceHasField) {
-							var obj:IHScriptCustomClassBehaviour = cast scriptObject;
-							if(isBypassAccessor) {
-								obj.__allowSetGet = false;
-								var res = obj.hset(id, v);
-								obj.__allowSetGet = true;
-								return res;
-							}
-							return obj.hset(id, v);
-						} */
 						else if(_scriptObjectType == SAccessBehaviourObject) {
 							var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
 							if(isBypassAccessor) {
@@ -462,17 +451,6 @@ class Interp {
 							UnsafeReflect.setField(scriptObject, id, v);
 							return v;
 						} 
-						/*
-						else if (_scriptObjectType == SCustomClass && instanceHasField) {
-							var obj:IHScriptCustomClassBehaviour = cast scriptObject;
-							if(isBypassAccessor) {
-								obj.__allowSetGet = false;
-								var res = obj.hset(id, v);
-								obj.__allowSetGet = true;
-								return res;
-							}
-							return obj.hset(id, v);
-						} */
 						else if(_scriptObjectType == SAccessBehaviourObject) {
 							var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
 							if(isBypassAccessor) {
@@ -857,17 +835,6 @@ class Interp {
 					final variable:Class<Any> = variables.exists(thing) ? cast variables.get(thing) : null;
 					return variable == null ? thing : Type.getClassName(variable);
 				}
-				/*
-				if (!newCustomClass) {
-					if (customClasses.exists(name))
-						error(EAlreadyExistingClass(name));
-					
-					trace("WARNING: Old Custom Class system marked for removal.\n'newCustomClass = true' to use the new system (STILL IN DEVELOPMENT)");
-					customClasses.set(name, new CustomClassHandler(this, name, fields, importVar(extend), [for (i in interfaces) importVar(i)]));
-					return null;
-				}
-				*/
-				// New Custom Class system
 			
 				if (localParsedClasses.contains(name))
 					error(EAlreadyExistingClass(name));
@@ -1354,11 +1321,6 @@ class Interp {
 					return arr[index];
 				}
 			case ENew(cl, params):
-				/*
-				var a = [];
-				for (e in params)
-					a.push(expr(e));
-				*/
 				return cnew(cl, makeArgs(params));
 			case EThrow(e):
 				throw expr(e);
@@ -1529,7 +1491,7 @@ class Interp {
 	}
 
 	function makeArgs(params:Array<Expr>):Array<Dynamic> {
-		var args:Array<Dynamic> = []; // [for (p in params) expr(p)];
+		var args:Array<Dynamic> = [];
 		for (p in params) {
 			switch (Tools.expr(p)) {
 				case EIdent(id):
@@ -1691,18 +1653,6 @@ class Interp {
 			cl != null && setRedirects.exists(cl) && (_setRedirect = setRedirects[cl]) != null;
 		})
 			return _setRedirect(o, f, v);
-		/*
-		if(o is IHScriptCustomClassBehaviour) {
-			var obj:IHScriptCustomClassBehaviour = cast o;
-			if(isBypassAccessor) {
-				obj.__allowSetGet = false;
-				var res = obj.hset(f, v);
-				obj.__allowSetGet = true;
-				return res;
-			}
-			return obj.hset(f, v);
-		}
-		*/
 		if (o is IHScriptCustomAccessBehaviour) {
 			var obj:IHScriptCustomAccessBehaviour = cast o;
 			if(isBypassAccessor) {
@@ -1854,11 +1804,7 @@ class Interp {
 			if(staticClass.hasFunction(f))
 				return staticClass.callFunction(f, args);
 		}
-		/*
-		if(_hasScriptObject && o == CustomClassHandler.staticHandler) {
-			return UnsafeReflect.callMethodUnsafe(scriptObject, UnsafeReflect.field(scriptObject, "_HX_SUPER__" + f), args);
-		}
-		*/
+
 		var func = get(o, f);
 
 		// Workaround for an HTML5-specific issue.
@@ -1873,11 +1819,6 @@ class Interp {
 	}
 
 	function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic {
-		/*
-		if(f == CustomClassHandler.staticHandler) {
-			return null;
-		}
-		*/
 		if (_inCustomClass) {
 			if (o == null && _nextCallObject != null) {
 				o = _nextCallObject;
@@ -1896,7 +1837,7 @@ class Interp {
 				_nextCallObject = null;
 				return r;
 			} catch (e) {
-				error(ECustom('${_proxy.className} threw an exception: \n${e.details()}'));
+				error(ECustom('${_proxy.className} threw an exception: \n${e.message}'));
 				_nextCallObject = null;
 				return null;
 			}

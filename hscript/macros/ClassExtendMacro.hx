@@ -254,7 +254,7 @@ class ClassExtendMacro {
 						if (returns) {
 							overrideExpr = macro {
 								var name:String = $v{name};
-
+								/*
 								if (__custom__variables != null) {
 									if(__custom__variables.exists(name)) {
 										var v:Dynamic = null;
@@ -263,7 +263,7 @@ class ClassExtendMacro {
 										}
 									}
 								}
-
+								*/
 								if (__customClass != null && @:privateAccess __customClass.hasFunction(name)) {
 									return __customClass.callFunction(name, [$a{arguments}]);
 								}
@@ -273,7 +273,7 @@ class ClassExtendMacro {
 						} else {
 							overrideExpr = macro {
 								var name:String = $v{name};
-
+								/*
 								if (__custom__variables != null) {
 									if(__custom__variables.exists(name)) {
 										var v:Dynamic = null;
@@ -283,7 +283,7 @@ class ClassExtendMacro {
 										}
 									}
 								}
-
+								*/
 								if (__customClass != null && @:privateAccess __customClass.hasFunction(name)) {
 									__customClass.callFunction(name, [$a{arguments}]);
 									return;
@@ -351,7 +351,7 @@ class ClassExtendMacro {
 				pack: cl.pack.copy(),
 				name: cl.name
 			}, [
-				{name: "IHScriptCustomAccessBehaviour", pack: ["hscript"]},
+				{name: "IHScriptCustomBehaviour", pack: ["hscript"]},
 				{name: "IHScriptCustomClassBehaviour", pack: ["hscript"]}
 			], false, true, false);
 			shadowClass.name = '${cl.name}$CLASS_SUFFIX';
@@ -367,21 +367,21 @@ class ClassExtendMacro {
 			});
 
 			// Adding hscript getters and setters
-
+			/*
 			shadowClass.fields.push({
 				name: "__interp",
 				pos: Context.currentPos(),
 				kind: FVar(macro: hscript.Interp),
 				access: [APublic]
 			});
-
+			*/
 			shadowClass.fields.push({
 				name: "__customClass",
 				pos: Context.currentPos(),
 				kind: FVar(macro: hscript.customclass.CustomClass),
 				access: [APublic]
 			});
-
+			/*
 			shadowClass.fields.push({
 				name: "__custom__variables",
 				pos: Context.currentPos(),
@@ -395,21 +395,23 @@ class ClassExtendMacro {
 				kind: FVar(macro: Bool, macro true),
 				access: [APublic]
 			});
-
+			*/
 			shadowClass.fields.push({
 				name: "__real_fields",
 				pos: Context.currentPos(),
 				kind: FVar(macro: Array<String>),
 				access: [APublic]
 			});
-
+			/*
 			shadowClass.fields.push({
 				name: "__class__fields",
 				pos: Context.currentPos(),
 				kind: FVar(macro: Array<String>),
 				access: [APublic]
 			});
-
+			*/
+			// Unneccessary since the get/set call is already handled.
+			/*
 			shadowClass.fields.push({
 				name: "__callGetter",
 				pos: Context.currentPos(),
@@ -463,7 +465,7 @@ class ClassExtendMacro {
 				}),
 				access: [APublic]
 			});
-
+			*/
 			// Todo: make it possible to override
 			if(cl.name == "FunkinShader" || cl.name == "CustomShader" || cl.name == "MultiThreadedScript") {
 				Context.defineModule(cl.module, [shadowClass], imports);
@@ -506,28 +508,33 @@ class ClassExtendMacro {
 
 			var hgetField = if(hasHgetInSuper) {
 				macro {
+					/*
 					if(__custom__variables != null) {
 						if(__allowSetGet && __custom__variables.exists("get_" + name))
 							return __callGetter(name);
 						if (__custom__variables.exists(name))
 							return __custom__variables.get(name);
 					}
+					*/
 					return super.hget(name);
 				}
 			} else {
 				macro {
+					/*
 					if(__custom__variables != null) {
 						if(__allowSetGet && __custom__variables.exists("get_" + name))
 							return __callGetter(name);
 						if (__custom__variables.exists(name))
 							return __custom__variables.get(name);
 					}
+					*/
 					return UnsafeReflect.getProperty(this, name);
 				}
 			}
 
 			var hsetField = if(hasHsetInSuper) {
 				macro {
+					/*
 					if(__custom__variables != null) {
 						if(__allowSetGet && __custom__variables.exists("set_" + name))
 							return __callSetter(name, val);
@@ -536,7 +543,7 @@ class ClassExtendMacro {
 							return val;
 						}
 					}
-					
+					*/
 					if(__real_fields != null && __real_fields.contains(name)) {
 						UnsafeReflect.setProperty(this, name, val);
 						return UnsafeReflect.field(this, name);
@@ -545,6 +552,7 @@ class ClassExtendMacro {
 				}
 			} else {
 				macro {
+					/*
 					if(__custom__variables != null) {
 						if(__allowSetGet && __custom__variables.exists("set_" + name))
 							return __callSetter(name, val);
@@ -553,12 +561,12 @@ class ClassExtendMacro {
 							return val;
 						}
 					}
-					
+					*/
 					if(__real_fields != null && __real_fields.contains(name)) {
 						UnsafeReflect.setProperty(this, name, val);
 						return UnsafeReflect.field(this, name);
 					}
-					if(__custom__variables != null) __custom__variables.set(name, val);
+					//if(__custom__variables != null) __custom__variables.set(name, val);
 					return val;
 				}
 			}
@@ -610,7 +618,7 @@ class ClassExtendMacro {
 					]
 				})
 			});
-
+			
 			/*var p = new Printer();
 			var aa = p.printTypeDefinition(shadowClass);
 			if(aa.length < 5024)

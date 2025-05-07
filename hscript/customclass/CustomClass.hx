@@ -27,6 +27,10 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	public var superClass:Dynamic;
 	public var superConstructor(default, null):Dynamic;
 
+	public var superIsCustomClass(get, never):Bool;
+	private function get_superIsCustomClass():Bool
+		return (superClass != null && superClass is CustomClass);
+
 	public var className(get, never):String;
 	private function get_className():String {
 		return __class.toString();
@@ -41,8 +45,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 	public var __allowSetGet:Bool = false;
 
-	private var isInline:Bool = false;
-	private var ogVariables:Map<String, Dynamic>;
+	private var isInline(default, null):Bool = false;
+	private var ogVariables(default, null):Map<String, Dynamic>;
 
 	public function new(__class:CustomClassDecl, args:Array<Dynamic>, ?extendFieldDecl:Map<String, Dynamic>, ?ogInterp:Interp, ?callNew:Bool = true) {
 		this.__class = __class;
@@ -235,7 +239,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	// Field check
 
 	private function hasField(name:String):Bool {
-		return __cachedFieldDecls != null ? __cachedFieldDecls.exists(name) : false;
+		return __cachedFieldDecls.exists(name);
 	}
 
 	private function getField(name:String):FieldDecl {
@@ -243,15 +247,15 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	}
 
 	private function hasVar(name:String):Bool {
-		return __cachedVarDecls != null ? __cachedVarDecls.exists(name) : false;
+		return __cachedVarDecls.exists(name);
 	}
 
 	private function getVar(name:String):VarDecl {
-		return __cachedVarDecls != null ? __cachedVarDecls.get(name) : null;
+		return __cachedVarDecls.get(name);
 	}
 
 	private function hasFunction(name:String):Bool {
-		return __cachedFunctionDecls != null ? __cachedFunctionDecls.exists(name) : false;
+		return __cachedFunctionDecls.exists(name);
 	}
 
 	private function getFunction(name:String):Function {
@@ -277,6 +281,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		if (__superClassFieldList == null) {
 			var realFields = Reflect.fields(superClass).concat(Type.getInstanceFields(Type.getClass(superClass)));
 			__superClassFieldList = realFields;
+
+			// TODO: macro-based superclass iteration for Custom Class as superclass
 		}
 
 		return __superClassFieldList.indexOf(name) != -1;

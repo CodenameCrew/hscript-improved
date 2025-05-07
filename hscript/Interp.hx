@@ -264,6 +264,7 @@ class Interp {
 
 		return switch(Tools.expr(e2))
 		{
+			// TODO: type check for custom classes
 			case EIdent("Class"):
 				Std.isOfType(expr1, Class);
 			case EIdent("Map") | EIdent("IMap"):
@@ -280,7 +281,10 @@ class Interp {
 
 	public function setVar(name:String, v:Dynamic):Void {
 		if (_inCustomClass && _proxy.superClass != null) {
-			if (_proxy.superHasField(name)) {
+			if (_proxy.superIsCustomClass) {
+				cast(_proxy.superClass, CustomClass).hset(name, v);
+			}
+			else if (_proxy.superHasField(name)) {
 				Reflect.setProperty(_proxy.superClass, name, v);
 			}
 		}
@@ -1790,8 +1794,12 @@ class Interp {
 		// Custom logic to handle super calls to prevent infinite recursion
 		if(_inCustomClass) {
 			// Force call super function.
-			if(o == _proxy.superClass)
-				return call(o, Reflect.field(_proxy.superClass, '_HX_SUPER__${f}'), args);
+			if(o == _proxy.superClass) {
+				if(_proxy.superIsCustomClass)
+					cast(_proxy.superClass, CustomClass).callFunction(f, args);
+				else
+					return call(o, Reflect.field(_proxy.superClass, '_HX_SUPER__${f}'), args);
+			}	
 		}
 		else if (o is CustomClass) {
 			_nextCallObject = null;

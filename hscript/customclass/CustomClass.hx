@@ -272,7 +272,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	}
 
 	var __superClassFieldList:Array<String> = null;
-	
+	// ONLY FOR REAL CLASSES. CUSTOM CLASSES CHECKS FOR THEIR FIELDS ON `hget/hset`
 	public function superHasField(name:String):Bool {
 		if (superClass == null)
 			return false;
@@ -281,8 +281,6 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		if (__superClassFieldList == null) {
 			var realFields = Reflect.fields(superClass).concat(Type.getInstanceFields(Type.getClass(superClass)));
 			__superClassFieldList = realFields;
-
-			// TODO: macro-based superclass iteration for Custom Class as superclass
 		}
 
 		return __superClassFieldList.indexOf(name) != -1;
@@ -359,6 +357,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		return r;
 	}
 
+	// TODO: move this to "hget" directly
 	private function resolveField(name:String):Dynamic {
 		switch (name) {
 			case "superClass":
@@ -415,7 +414,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 							return superCustomClass.hget(name);
 						} catch (e) {}
 					}
-
+					// Real Class
 					var fields = Type.getInstanceFields(Type.getClass(this.superClass));
 					if (fields.contains(name)) {
 						return __allowSetGet ? Reflect.getProperty(this.superClass, name) : Reflect.field(this.superClass, name);

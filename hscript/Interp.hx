@@ -308,19 +308,33 @@ class Interp {
 						var v = expr(e2);
 						_proxy.__class.hset(id, v);
 						return v;
-					} else if (_proxy.superClass != null && _proxy.superHasField(id)) {
+					} 
+					/*
+					else if (_proxy.superClass != null && _proxy.superHasField(id)) {
 						var v = expr(e2);
-						Reflect.setProperty(_proxy.superClass, id, v);
+						//Reflect.setProperty(_proxy.superClass, id, v);
+						_proxy.hset(id, v);
 						return v;
-					} else if (_proxy.hasVar(id)) {
+					} 
+					else if (_proxy.hasVar(id)) {
 						var v = expr(e2);
 						_proxy.hset(id, v);
 						return v;
-					} else if (_proxy.superClass == null && _proxy.__class.classDecl.extend != null) {
+					} 
+					*/
+					else if (_proxy.superClass == null && _proxy.__class.classDecl.extend != null) {
 						// Caches the declaration to set it once superClass is created
 						var v = expr(e2);
 						_proxy.cacheSuperField(id, v);
 						return v;
+					}
+					else {
+						try {
+							var v = expr(e2);
+							_proxy.hset(id, v); // superClass check already handled in Custom Class
+							return v;
+						}
+						catch(e) {}
 					}
 				}
 				var l = locals.get(id);
@@ -375,6 +389,7 @@ class Interp {
 					switch (Tools.expr(e)) {
 						case EIdent(id0):
 							if (id0 == "this") {
+								/*
 								if (_proxy.hasField(f)) {
 									var v = expr(e2);
 									_proxy.hset(f, v);
@@ -387,17 +402,27 @@ class Interp {
 										return v;
 									}
 								}
-								else if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null){
+								*/
+								if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null){
 									// Caches the declaration to set it once superClass is created
 									var v = expr(e2);
 									_proxy.cacheSuperField(f, v);
 									return v;
+								}
+								else {
+									try {
+										var v = expr(e2);
+										_proxy.hset(f, v);
+										return v;
+									}
+									catch(e){}
 								}
 							}
 						default:
 							// Do nothing
 					}
 				}
+				// Fallback, which calls set()
 				var obj = expr(e);
 				if(s && obj == null) return null;
 				v = set(obj, f, v);
@@ -433,6 +458,7 @@ class Interp {
 						_proxy.__class.hset(id, v);
 						return v;
 					}
+					/*
 					else if (_proxy.superClass != null && _proxy.superHasField(id)) {
 						Reflect.setProperty(_proxy.superClass, id, v);
 						return v;
@@ -441,9 +467,17 @@ class Interp {
 						_proxy.hset(id, v);
 						return v;
 					}
+					*/
 					else if ((_proxy.superClass == null && _proxy.__class.classDecl.extend != null)) {
 						_proxy.cacheSuperField(id, v);
 						return v;
+					}
+					else {
+						try {
+							_proxy.hset(id, v); // superClass check already handled in Custom Class
+							return v;
+						}
+						catch(e) {}
 					}
 				}
 				var l = locals.get(id);
@@ -502,6 +536,7 @@ class Interp {
 					switch(Tools.expr(e)) {
 						case EIdent(_id):
 							if (_id == 'this') {
+								/*
 								if (_proxy.hasField(f)) {
 									v = fop(get(obj, f), expr(e2));
 									_proxy.hset(f, v);
@@ -514,11 +549,20 @@ class Interp {
 										return v;
 									}
 								}
-								else if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null){
+								*/
+								if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null){
 									// Caches the declaration to set it once superClass is created
 									v = fop(get(obj, f), expr(e2));
 									_proxy.cacheSuperField(f, v);
 									return v;
+								}
+								else {
+									try {
+										v = fop(get(obj, f), expr(e2));
+										_proxy.hset(f, v); // superClass check already handled in Custom Class
+										return v;
+									}
+									catch(e) {}
 								}
 							}
 						default:
@@ -719,10 +763,6 @@ class Interp {
 			return publicVariables.get(id);
 		if(staticVariables.exists(id))
 			return staticVariables.get(id);
-		/*
-		if(customClasses.exists(id))
-			return customClasses.get(id);
-		*/
 		if(customClassExist(id))
 			return getCustomClass(id);
 
@@ -763,16 +803,7 @@ class Interp {
 
 			if (_scriptObjectType == SObject && instanceHasField) {
 				return UnsafeReflect.field(scriptObject, id);
-			}/* else if(_scriptObjectType == SCustomClass && instanceHasField) {
-				var obj:IHScriptCustomClassBehaviour = cast scriptObject;
-				if(isBypassAccessor) {
-					obj.__allowSetGet = false;
-					var res = obj.hget(id);
-					obj.__allowSetGet = true;
-					return res;
-				}
-				return obj.hget(id);
-			}*/
+			}
 			else if(_scriptObjectType == SAccessBehaviourObject) {
 				var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
 				if(isBypassAccessor) {

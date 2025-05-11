@@ -158,7 +158,7 @@ class Interp {
 	public var allowStaticVariables:Bool = false;
 	public var allowPublicVariables:Bool = false;
 
-	public var importBlocklist:Array<String> = [ // Should I remove this since we have "InterpConfig"???
+	public var importBlocklist:Array<String> = [
 		// "flixel.FlxG"
 	];
 

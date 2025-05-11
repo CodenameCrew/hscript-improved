@@ -108,8 +108,8 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 						#else
 						var fexpr = Expr.EFunction(fn.args, fn.body, f.name, fn.ret, false, false);
 						#end
-						var f0 = this.staticInterp.expr(fexpr);
-						this.staticInterp.variables.set(f.name, f0);
+						var func:Function = this.staticInterp.expr(fexpr);
+						this.staticInterp.variables.set(f.name, func);
 					case KVar(v):
 						_cachedStaticVariables.set(f.name, v);
 						if (v.expr != null) {

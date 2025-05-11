@@ -110,14 +110,7 @@ class Interp {
 		switch(Type.typeof(v)) {
 			case TClass(c): // Class Access
 				__instanceFields = Type.getInstanceFields(c);
-				/*
-				if(v is IHScriptCustomClassBehaviour) {
-					var v:IHScriptCustomClassBehaviour = cast v;
-					var classFields = v.__class__fields;
-					if(classFields != null)
-						__instanceFields = __instanceFields.concat(classFields);
-					_scriptObjectType = SCustomClass;
-				} else*/ if(v is IHScriptCustomAccessBehaviour) {
+				if(v is IHScriptCustomAccessBehaviour) {
 					_scriptObjectType = SAccessBehaviourObject;
 				} else if(v is IHScriptCustomBehaviour) {
 					_scriptObjectType = SBehaviourClass;
@@ -165,7 +158,7 @@ class Interp {
 	public var allowStaticVariables:Bool = false;
 	public var allowPublicVariables:Bool = false;
 
-	public var importBlocklist:Array<String> = [
+	public var importBlocklist:Array<String> = [ // Should I remove this since we have "InterpConfig"???
 		// "flixel.FlxG"
 	];
 
@@ -322,7 +315,7 @@ class Interp {
 						return v;
 					} 
 					*/
-					else if (_proxy.superClass == null && _proxy.__class.classDecl.extend != null) {
+					if (_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(id)) {
 						// Caches the declaration to set it once superClass is created
 						var v = expr(e2);
 						_proxy.cacheSuperField(id, v);
@@ -403,7 +396,7 @@ class Interp {
 									}
 								}
 								*/
-								if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null){
+								if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(f)){
 									// Caches the declaration to set it once superClass is created
 									var v = expr(e2);
 									_proxy.cacheSuperField(f, v);
@@ -468,7 +461,7 @@ class Interp {
 						return v;
 					}
 					*/
-					else if ((_proxy.superClass == null && _proxy.__class.classDecl.extend != null)) {
+					else if ((_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(id))) {
 						_proxy.cacheSuperField(id, v);
 						return v;
 					}
@@ -550,7 +543,7 @@ class Interp {
 									}
 								}
 								*/
-								if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null){
+								if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(f)){
 									// Caches the declaration to set it once superClass is created
 									v = fop(get(obj, f), expr(e2));
 									_proxy.cacheSuperField(f, v);
@@ -777,14 +770,14 @@ class Interp {
 			// We are calling a LOCAL function from the same module.
 			if (_proxy.hasFunction(id)) {
 				_nextCallObject = _proxy;
-				return _proxy.resolveField(id);
+				return _proxy.hget(id);
 			}
 			if (_proxy.superHasField(id)) {
 				_nextCallObject = _proxy.superClass;
 				return Reflect.getProperty(_proxy.superClass, id);
 			} else {
 				try {
-					var r = _proxy.resolveField(id);
+					var r = _proxy.hget(id);
 					_nextCallObject = _proxy;
 					return r;
 				} catch (e:Dynamic) {
@@ -863,7 +856,7 @@ class Interp {
 		#end
 		switch (e) {
 			case EIgnore(_):
-			case EClass(name, fields, extend, interfaces): //Not sure if leave the old system or implement the new one.
+			case EClass(name, fields, extend, interfaces):
 				inline function importVar(thing:String):String {
 					if (thing == null)
 						return null;
@@ -1632,18 +1625,6 @@ class Interp {
 		}) {
 			return _getRedirect(o, f);
 		}
-		/*
-		if(o is IHScriptCustomClassBehaviour) {
-			var obj:IHScriptCustomClassBehaviour = cast o;
-			if(isBypassAccessor) {
-				obj.__allowSetGet = false;
-				var res = obj.hget(f);
-				obj.__allowSetGet = true;
-				return res;
-			}
-			return obj.hget(f);
-		}
-		*/
 		if (o is IHScriptCustomAccessBehaviour) {
 			var obj:IHScriptCustomAccessBehaviour = cast o;
 			if(isBypassAccessor) {

@@ -22,6 +22,8 @@
 package hscript;
 import hscript.Expr;
 
+using StringTools;
+
 class Tools {
 
 	public static function iter( e : Expr, f : Expr -> Void ):Void {
@@ -112,6 +114,14 @@ class Tools {
 		#end
 	}
 
+	@:access(hscript.Interp)
+	public static function clearClasses() {
+		#if CUSTOM_CLASSES
+		Interp._customClasses.clear();
+		Interp._customClassAliases.clear();
+		#end
+	}
+
 	public static function removeInnerClass(name: String): String {
 		var ll = name.lastIndexOf(".");
 		if (name.indexOf(".") != ll) { // checks if there are 2 or more dots
@@ -125,7 +135,10 @@ class Tools {
 
 	// TODO: maybe use this function for import since also check for innerclasses
 	public static function getClass(name: String): Dynamic {
-		var c: Dynamic = Type.resolveClass(name);
+		var splitClassName = [for (e in name.split(".")) e.trim()];
+		var realClassName = splitClassName.join(".");
+
+		var c: Dynamic = Type.resolveClass(realClassName);
 		if (c == null) // try importing as enum
 			try
 				c = Type.resolveEnum(name);
@@ -135,7 +148,7 @@ class Tools {
 			// this allows you to import stuff like
 			// flixel.text.FlxText.FlxTextBorderStyle
 			// without the script crashing immediately
-			var className = removeInnerClass(name);
+			var className = removeInnerClass(realClassName);
 			if (className != name) {
 				c = Type.resolveClass(className);
 				if (c == null)

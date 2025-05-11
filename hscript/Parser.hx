@@ -1078,6 +1078,14 @@ class Parser {
 
 			switch(t) {
 				case CTAnon(_) | CTFun(_):
+					/*
+						Ignore parsing if its, 
+						typedef Name = {
+							> Person
+							var name:String;
+							var age:Int;
+						}
+					 */
 					mk(EIgnore(true));
 				case CTPath(path, params):
 					if (params != null && params.length > 1)

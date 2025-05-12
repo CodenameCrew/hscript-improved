@@ -854,6 +854,8 @@ class Parser {
 				}
 			}
 			var ident = getIdent();
+			var get = null, set = null;
+			// TODO: getter and setter
 			var tk = token();
 			var t = null;
 			nextType = null;
@@ -1775,10 +1777,10 @@ class Parser {
 							ret : inf.ret,
 						}),
 					};
-				case "var":
+				case "var" | "final":
 					var name = getIdent();
 					var get = null, set = null;
-					if( maybe(TPOpen) ) {
+					if(id != "final" && maybe(TPOpen) ) {
 						get = getIdent();
 						ensure(TComma);
 						set = getIdent();
@@ -1806,6 +1808,7 @@ class Parser {
 							set : set,
 							type : type,
 							expr : expr,
+							isFinal: id == "final"
 						}),
 					};
 				default:

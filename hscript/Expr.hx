@@ -54,7 +54,7 @@ enum Expr {
 	EIgnore(skip:Bool);
 	EConst( c : Const );
 	EIdent( v : String );
-	EVar( n : String, ?t : CType, ?e : Expr, ?isPublic : Bool, ?isStatic : Bool, ?isPrivate : Bool, ?isFinal : Bool, ?isInline : Bool );
+	EVar( n : String, ?t : CType, ?e : Expr, ?isPublic : Bool, ?isStatic : Bool, ?isPrivate : Bool, ?isFinal : Bool, ?isInline : Bool, ?get : String, ?set : String );
 	EParent( e : Expr );
 	EBlock( e : Array<Expr> );
 	EField( e : Expr, f : String , ?safe : Bool );
@@ -220,6 +220,7 @@ typedef VarDecl = {
 	var set : Null<String>;
 	var expr : Null<Expr>;
 	var type : Null<CType>;
+	var isFinal : Null<Bool>;
 }
 
 typedef TypeParamDecl = {};

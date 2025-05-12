@@ -889,16 +889,17 @@ class Interp {
 							};
 
 							customClassFields.push(fd);
-						case EVar(n, t, e, isPublic, isStatic, isPrivate, isFinal, isInline):
+						case EVar(n, t, e, isPublic, isStatic, isPrivate, isFinal, isInline, getter, setter):
 							var varAcc:Array<FieldAccess> = [];
 							if (isPublic) varAcc.push(APublic);
 							if (isStatic) varAcc.push(AStatic);
 
 							var vrd:VarDecl = {
-								get: null,
-								set: null,
+								get: getter,
+								set: setter,
 								expr: e,
-								type: t
+								type: t,
+								isFinal: isFinal
 							};
 							var fd:FieldDecl = {
 								name: n,
@@ -928,7 +929,7 @@ class Interp {
 
 				var customClassDecl:CustomClassDecl = {
 					classDecl: classDecl,
-					imports: localImports,
+					imports: localImports, // TODO: better way to reuse imported classes 
 					usings: [for(u in this.usings) u.name],
 					pkg: null,
 					ogInterp: this,

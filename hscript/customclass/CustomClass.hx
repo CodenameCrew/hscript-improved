@@ -315,15 +315,19 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 				}
 
 				if (hasVar(name)) {
+					var v = getVar(name);
+					var getter = v.get != null ? v.get : 'default';
+					
 					var value:Dynamic = null;
 
-					if (__allowSetGet && hasFunction('get_${name}')) 
+					if(getter == "never")
+						throw 'field $name cannot be accessed for reading';
+
+					if (__allowSetGet && getter == "get" && hasFunction('get_${name}')) 
 						value = __callGetter(name);
 					else if (this.interp.variables.exists(name)) 
 						value = this.interp.variables.get(name);
 					else {
-						var v = getVar(name);
-
 						if (v.expr != null) {
 							value = this.interp.expr(v.expr);
 							this.interp.variables.set(name, value);
@@ -344,10 +348,9 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 					if (this.superClass is CustomClass) {
 						var superCustomClass:CustomClass = cast(this.superClass, CustomClass);
-						try {
-							superCustomClass.__allowSetGet = this.__allowSetGet;
-							return superCustomClass.hget(name);
-						} catch (e) {}
+						
+						superCustomClass.__allowSetGet = this.__allowSetGet;
+						return superCustomClass.hget(name);
 					}
 					// Real Class
 					var fields = Type.getInstanceFields(Type.getClass(this.superClass));
@@ -366,17 +369,22 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 		switch (name) {
 			default:
 				if (hasVar(name)) {
-					if (__allowSetGet && hasFunction('set_${name}'))
+					var v = getVar(name);
+					var setter = v.set != null ? v.set : 'default';
+
+					if (setter == "never" || (v.isFinal != null && v.isFinal))
+						throw 'field $name cannot be accessed for writing';
+
+					if (__allowSetGet && setter == "set" && hasFunction('set_${name}'))
 						return __callSetter(name, val);
 
 					this.interp.variables.set(name, val);
 				} else if (this.superClass != null) {
 					if (this.superClass is CustomClass) {
 						var superCustomClass:CustomClass = cast(this.superClass, CustomClass);
-						try {
-							superCustomClass.__allowSetGet = this.__allowSetGet;
-							return superCustomClass.hset(name, val);
-						} catch (e:Dynamic) {}
+						
+						superCustomClass.__allowSetGet = this.__allowSetGet;
+						return superCustomClass.hset(name, val);
 					}
 					// Real Class
 					if (Type.getClass(this.superClass) == null) {

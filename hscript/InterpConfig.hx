@@ -2,13 +2,14 @@ package hscript;
 
 class InterpConfig {
     // Automatic import redirect for certain classes
-	public static var IMPORT_REDIRECTS(default, never) = [
+	public static final IMPORT_REDIRECTS = [
 		"Type" => "hscript.proxy.ProxyType"
 	];
 	
 	// Incase an import fails
 	// These are the module names
-	@:unreflective public static var DISALLOW_IMPORT(default, never) = [
+	@:unreflective 
+	public static final DISALLOW_IMPORT = [
 		"Type"
 	];
 }

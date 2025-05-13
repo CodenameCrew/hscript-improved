@@ -276,9 +276,10 @@ class Interp {
 	public function setVar(name:String, v:Dynamic):Void {
 		if (_inCustomClass && _proxy.superClass != null) {
 			if (_proxy.superIsCustomClass) {
+				var oldPrivate = _proxy.__allowPrivateAccess;
 				_proxy.__allowPrivateAccess = true;
 				cast(_proxy.superClass, CustomClass).hset(name, v);
-				_proxy.__allowPrivateAccess = false;
+				_proxy.__allowPrivateAccess = oldPrivate;
 				return;
 			}
 			else if (_proxy.superHasField(name)) {
@@ -299,14 +300,16 @@ class Interp {
 		var v = expr(e2);
 		switch (Tools.expr(e1)) {
 			case EIdent(id):
+				// TODO: redo field check
 				// Make sure setting superclass/static fields directly works.
 				// Also ensures property functions are accounted for.
 				if (_inCustomClass) {
 					if (_proxy.__class.hasField(id)) {
 						var v = expr(e2);
+						var oldPrivate = _proxy.__class.__allowPrivateAccess;
 						_proxy.__class.__allowPrivateAccess = true;
 						_proxy.__class.hset(id, v);
-						_proxy.__class.__allowPrivateAccess = false;
+						_proxy.__class.__allowPrivateAccess = oldPrivate;
 						return v;
 					} 
 					if (_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(id)) {
@@ -316,15 +319,17 @@ class Interp {
 						return v;
 					}
 					else {
+						var oldPrivate = _proxy.__allowPrivateAccess;
 						try {
 							var v = expr(e2);
 							_proxy.__allowPrivateAccess = true;
 							_proxy.hset(id, v); // superClass check already handled in Custom Class
-							_proxy.__allowPrivateAccess = false;
+							_proxy.__allowPrivateAccess = oldPrivate;
 							return v;
 						}
 						catch(e) {
-							_proxy.__allowPrivateAccess = false;
+							_proxy.__allowPrivateAccess = oldPrivate;
+							// TODO: throw an error
 						}
 					}
 				}
@@ -394,15 +399,16 @@ class Interp {
 									return v;
 								}
 								else {
+									var oldPrivate = _proxy.__allowPrivateAccess;
 									try {
 										var v = expr(e2);
 										_proxy.__allowPrivateAccess = true;
 										_proxy.hset(f, v);
-										_proxy.__allowPrivateAccess = false;
+										_proxy.__allowPrivateAccess = oldPrivate;
 										return v;
 									}
 									catch(e){
-										_proxy.__allowPrivateAccess = false;
+										_proxy.__allowPrivateAccess = oldPrivate;
 									}
 								}
 							}
@@ -443,9 +449,10 @@ class Interp {
 				// Also ensures property functions are accounted for.
 				if(_inCustomClass) {
 					if (_proxy.__class.hasField(id)) {
+						var oldPrivate = _proxy.__class.__allowPrivateAccess;
 						_proxy.__class.__allowPrivateAccess = true;
 						_proxy.__class.hset(id, v);
-						_proxy.__class.__allowPrivateAccess = false;
+						_proxy.__class.__allowPrivateAccess = oldPrivate;
 						return v;
 					}
 					/*
@@ -463,14 +470,15 @@ class Interp {
 						return v;
 					}
 					else {
+						var oldPrivate = _proxy.__allowPrivateAccess;
 						try {
 							_proxy.__allowPrivateAccess = true;
 							_proxy.hset(id, v); // superClass check already handled in Custom Class
-							_proxy.__allowPrivateAccess = false;
+							_proxy.__allowPrivateAccess = oldPrivate;
 							return v;
 						}
 						catch(e) {
-							_proxy.__allowPrivateAccess = false;
+							_proxy.__allowPrivateAccess = oldPrivate;
 						}
 					}
 				}
@@ -545,15 +553,16 @@ class Interp {
 									return v;
 								}
 								else {
+									var oldPrivate = _proxy.__allowPrivateAccess;
 									try {
 										v = fop(get(obj, f), expr(e2));
 										_proxy.__allowPrivateAccess = true;
 										_proxy.hset(f, v); // superClass check already handled in Custom Class
-										_proxy.__allowPrivateAccess = false;
+										_proxy.__allowPrivateAccess = oldPrivate;
 										return v;
 									}
 									catch(e) {
-										_proxy.__allowPrivateAccess = false;
+										_proxy.__allowPrivateAccess = oldPrivate;
 									}
 								}
 							}
@@ -762,17 +771,19 @@ class Interp {
 		if (_inCustomClass) {
 			// Static access
 			if (_proxy.__class.hasField(id))  {
+				var oldPrivate = _proxy.__class.__allowPrivateAccess;
 				_proxy.__class.__allowPrivateAccess = true;
 				var r = _proxy.__class.hget(id);
-				_proxy.__class.__allowPrivateAccess = false;
+				_proxy.__class.__allowPrivateAccess = oldPrivate;
 				return r;
 			}
 			
 			
 			if (_proxy.hasVar(id))  {
+				var oldPrivate = _proxy.__allowPrivateAccess;
 				_proxy.__allowPrivateAccess = true;
 				var r = _proxy.hget(id);
-				_proxy.__allowPrivateAccess = false;
+				_proxy.__allowPrivateAccess = oldPrivate;
 				return r;
 			}
 			// We are calling a LOCAL function from the same module.
@@ -784,16 +795,17 @@ class Interp {
 				_nextCallObject = _proxy.superClass;
 				return Reflect.getProperty(_proxy.superClass, id);
 			} else {
+				var oldPrivate = _proxy.__allowPrivateAccess;
 				try {
 					_proxy.__allowPrivateAccess = true;
 					var r = _proxy.hget(id);
 					_nextCallObject = _proxy;
-					_proxy.__allowPrivateAccess = false;
+					_proxy.__allowPrivateAccess = oldPrivate;
 					return r;
 				} catch (e:Dynamic) {
 					if(doException)
 						error(EUnknownVariable(id));
-					_proxy.__allowPrivateAccess = false;
+					_proxy.__allowPrivateAccess = oldPrivate;
 				}
 			}
 		}

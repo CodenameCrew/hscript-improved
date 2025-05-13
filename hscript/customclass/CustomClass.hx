@@ -3,6 +3,7 @@ package hscript.customclass;
 import hscript.utils.UnsafeReflect;
 import haxe.Constraints.Function;
 import hscript.Expr;
+import hscript.Expr.FieldPropertyAccess;
 import hscript.Expr.VarDecl;
 import hscript.Expr.FunctionDecl;
 import hscript.Expr.FieldDecl;
@@ -44,9 +45,11 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	private var __cachedVarDecls:Map<String, VarDecl> = [];
 
 	public var __allowSetGet:Bool = false;
+	public var __allowInnerAccess:Bool = false;
 
 	private var isInline(default, null):Bool = false;
 	private var ogVariables(default, null):Map<String, Dynamic>;
+	private var initializing(default, null):Bool = false; // Allows final variables to be initialized
 
 	public function new(__class:CustomClassDecl, args:Array<Dynamic>, ?extendFieldDecl:Map<String, Dynamic>, ?ogInterp:Interp, ?callNew:Bool = true) {
 		this.__class = __class;
@@ -76,7 +79,10 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 		if (hasFunction('new') && callNew) {
 			buildSuperConstructor();
+			initializing = true;
 			callFunction('new', args);
+			initializing = false;
+
 			if (this.superClass == null && this.__class.classDecl.extend != null)
 				this.interp.error(ECustom("super() not called"));
 		} else if (__class.classDecl.extend != null) {
@@ -94,8 +100,6 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			__cachedFieldDecls.set(f.name, f);
 			switch (f.kind) {
 				case KFunction(fn):
-					if(f.name.startsWith('set_') || f.name.startsWith('get_'))
-						__allowSetGet = true;
 					__cachedFunctionDecls.set(f.name, fn);
 					#if hscriptPos
 					var fexpr:Expr = {
@@ -111,6 +115,8 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 					var func:Function = this.interp.expr(fexpr);
 					this.interp.variables.set(f.name, func);
 				case KVar(v):
+					if(v.get != ADefault || v.set != ADefault)
+						__allowSetGet = true;
 					__cachedVarDecls.set(f.name, v);
 					if (v.expr != null) {
 						var varValue = this.interp.expr(v.expr);
@@ -316,15 +322,19 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 				if (hasVar(name)) {
 					var v = getVar(name);
-					var getter = v.get != null ? v.get : 'default';
+					var getter = v.get;
 					
 					var value:Dynamic = null;
 
-					if(getter == "never")
+					if(getter == ANever || getter == ANull && !__allowInnerAccess)
 						throw 'field $name cannot be accessed for reading';
 
-					if (__allowSetGet && getter == "get" && hasFunction('get_${name}')) 
-						value = __callGetter(name);
+					if (__allowSetGet && getter == AGet) {
+						if (hasFunction('get_$name'))
+							value = __callGetter(name);
+						else
+							throw 'Method get_$name required by property $name is missing';
+					}
 					else if (this.interp.variables.exists(name)) 
 						value = this.interp.variables.get(name);
 					else {
@@ -370,13 +380,17 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 			default:
 				if (hasVar(name)) {
 					var v = getVar(name);
-					var setter = v.set != null ? v.set : 'default';
+					var setter = v.set;
 
-					if (setter == "never" || (v.isFinal != null && v.isFinal))
+					if (setter == ANever || setter == ANull && !__allowInnerAccess || (v.isFinal && !initializing))
 						throw 'field $name cannot be accessed for writing';
 
-					if (__allowSetGet && setter == "set" && hasFunction('set_${name}'))
-						return __callSetter(name, val);
+					if (__allowSetGet && setter == ASet) {
+						if (hasFunction('set_$name'))
+							return __callSetter(name, val);
+						else
+							throw 'Method set_$name required by property $name is missing';
+					}
 
 					this.interp.variables.set(name, val);
 				} else if (this.superClass != null) {
@@ -411,14 +425,14 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 
 	public function __callGetter(name:String):Dynamic {
 		__allowSetGet = false;
-		var r = callFunction('get_${name}');
+		var r = callFunction('get_$name');
 		__allowSetGet = true;
 		return r;
 	}
 
 	public function __callSetter(name:String, val:Dynamic):Dynamic {
 		__allowSetGet = false;
-		var r = callFunction('set_${name}', [val]);
+		var r = callFunction('set_$name', [val]);
 		__allowSetGet = true;
 		return r;
 	}

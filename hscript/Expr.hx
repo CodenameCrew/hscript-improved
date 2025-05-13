@@ -54,7 +54,7 @@ enum Expr {
 	EIgnore(skip:Bool);
 	EConst( c : Const );
 	EIdent( v : String );
-	EVar( n : String, ?t : CType, ?e : Expr, ?isPublic : Bool, ?isStatic : Bool, ?isPrivate : Bool, ?isFinal : Bool, ?isInline : Bool, ?get : String, ?set : String );
+	EVar( n : String, ?t : CType, ?e : Expr, ?isPublic : Bool, ?isStatic : Bool, ?isPrivate : Bool, ?isFinal : Bool, ?isInline : Bool, ?get : FieldPropertyAccess, ?set : FieldPropertyAccess );
 	EParent( e : Expr );
 	EBlock( e : Array<Expr> );
 	EField( e : Expr, f : String , ?safe : Bool );
@@ -216,11 +216,11 @@ final class FunctionDecl {
 }
 
 typedef VarDecl = {
-	var get : Null<String>;
-	var set : Null<String>;
+	var get : FieldPropertyAccess;
+	var set : FieldPropertyAccess;
+	var isFinal : Bool;
 	var expr : Null<Expr>;
 	var type : Null<CType>;
-	var isFinal : Null<Bool>;
 }
 
 typedef TypeParamDecl = {};
@@ -228,4 +228,12 @@ typedef TypeParamDecl = {};
 enum EnumType {
 	ESimple(name: String);
 	EConstructor(name: String, args: Array<Argument>);
+}
+
+enum abstract FieldPropertyAccess(UInt8) {
+	var ADefault;
+	var ANull;
+	var ANever;
+	var AGet;
+	var ASet;
 }

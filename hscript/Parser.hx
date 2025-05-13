@@ -22,6 +22,7 @@
 package hscript;
 import haxe.rtti.Meta;
 import hscript.Expr;
+import hscript.Expr.FieldPropertyAccess;
 
 enum Token {
 	TEof;
@@ -854,9 +855,33 @@ class Parser {
 				}
 			}
 			var ident = getIdent();
-			var get = null, set = null;
-			// TODO: getter and setter
+			var get = ADefault, set = ADefault;
 			var tk = token();
+			// TODO: throw "Missing ;" if tried to use (get, set) on final
+			// and "Property requires type-hint or initialization" on missing type.
+			if( tk == TPOpen && id != "final" ) {
+				var getId = getIdent();
+				switch (getId) {
+					case 'default': // Do nothing
+					case 'get': get = AGet;
+					case 'null': get = ANull;
+					case 'never': get = ANever;
+					default: unexpected(TId(getId));
+				}
+				ensure(TComma);
+				var setId = getIdent();
+				switch (setId) {
+					case 'default': // Do nothing
+					case 'set': set = ASet;
+					case 'null': set = ANull;
+					case 'never': set = ANever;
+					default: unexpected(TId(getId));
+				}
+				ensure(TPClose);
+
+				tk = token();
+			}
+
 			var t = null;
 			nextType = null;
 			if( tk == TDoubleDot && allowTypes ) {
@@ -1779,11 +1804,27 @@ class Parser {
 					};
 				case "var" | "final":
 					var name = getIdent();
-					var get = null, set = null;
-					if(id != "final" && maybe(TPOpen) ) {
-						get = getIdent();
+					var get = ADefault, set = ADefault;
+					// TODO: throw "Missing ;" if tried to use (get, set) on final
+					// and "Property requires type-hint or initialization" on missing type.
+					if(maybe(TPOpen) && id != "final") {
+						var getId = getIdent();
+						switch(getId) {
+							case 'default': // Do nothing
+							case 'get': get = AGet;
+							case 'null': get = ANull;
+							case 'never': get = ANever;
+							default: unexpected(TId(getId));
+						}
 						ensure(TComma);
-						set = getIdent();
+						var setId = getIdent();
+						switch(setId) {
+							case 'default': // Do nothing
+							case 'set': set = ASet;
+							case 'null': set = ANull;
+							case 'never': set = ANever;
+							default: unexpected(TId(getId));
+						}
 						ensure(TPClose);
 					}
 					var type = maybe(TDoubleDot) ? parseType() : null;
@@ -1806,9 +1847,9 @@ class Parser {
 						kind : KVar({
 							get : get,
 							set : set,
+							isFinal: id == "final",
 							type : type,
-							expr : expr,
-							isFinal: id == "final"
+							expr : expr
 						}),
 					};
 				default:

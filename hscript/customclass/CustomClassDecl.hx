@@ -31,6 +31,8 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 	public var __allowSetGet:Bool = true;
 
+	public var __allowInnerAccess:Bool = false;
+
 	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, ?pkg:Array<String>, ?ogInterp:Interp, ?isInline:Bool) {
 		this.classDecl = classDecl;
 		this.imports = imports;
@@ -111,6 +113,8 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 						var func:Function = this.staticInterp.expr(fexpr);
 						this.staticInterp.variables.set(f.name, func);
 					case KVar(v):
+						if(v.get != ADefault || v.set != ADefault)
+							__allowSetGet = true;
 						_cachedStaticVariables.set(f.name, v);
 						if (v.expr != null) {
 							var varValue = this.staticInterp.expr(v.expr);
@@ -166,24 +170,8 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 		return _cachedStaticVariables.exists(name);
 	}
 
-	private function getVar(name:String):Dynamic {
-		var staticVar = _cachedStaticVariables.get(name);
-
-		if(staticVar != null) {
-			var varValue:Dynamic = null;
-			if(!this.staticInterp.variables.exists(name)) {
-				if(staticVar.expr != null) {
-					varValue = this.staticInterp.expr(staticVar.expr);
-					this.staticInterp.variables.set(name, varValue);
-				}
-			}
-			else {
-				varValue = this.staticInterp.variables.get(name);
-			}
-			return varValue;
-		}
-
-		return null;
+	private function getVar(name:String):VarDecl {
+		return _cachedStaticVariables.get(name);
 	}
 
 	/**
@@ -198,16 +186,33 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 	}
 
 	public function hget(name:String):Dynamic {
-		var r:Dynamic = null;
-
 		if(hasVar(name)) {
-			if(__allowSetGet && hasFunction('get_${name}'))
-				r = __callGetter(name);
-			else 
-				r = getVar(name);
+			var v = getVar(name);
+			var getter = v.get;
+
+			var r:Dynamic = null;
+
+			if (getter == ANever || getter == ANull && !__allowInnerAccess)
+				throw 'field $name cannot be accessed for reading';
+
+			if(__allowSetGet && getter == AGet){
+				if(hasFunction('get_$name'))
+					r = __callGetter(name);
+				else 
+					throw 'Method get_$name required by property $name is missing';
+			}
+			else if (this.staticInterp.variables.exists(name))
+				r = this.staticInterp.variables.get(name);
+			else {
+				if(v.expr != null) {
+					r = this.staticInterp.expr(v.expr);
+					this.staticInterp.variables.set(name, r);
+				}
+			}
 			return r;
 		}
 		if(hasFunction(name)) {
+			// TODO: optimize this
 			var fn:Function = Reflect.makeVarArgs(function(args:Array<Dynamic>) {
 				return this.callFunction(name, args);
 			});
@@ -219,8 +224,18 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 	public function hset(name:String, val:Dynamic):Dynamic {
 		if (hasVar(name)) {
-			if (__allowSetGet && hasFunction('set_${name}'))
-				return __callSetter(name, val);
+			var v = getVar(name);
+			var setter = v.set;
+
+			if (setter == ANever || setter == ANull && !__allowInnerAccess || v.isFinal)
+				throw 'field $name cannot be accessed for writing';
+
+			if (__allowSetGet && setter == ASet) {
+				if (hasFunction('set_$name'))
+					return __callSetter(name, val);
+				else 
+					throw 'Method set_$name required by property $name is missing';
+			}
 			else {
 				this.staticInterp.variables.set(name, val);
 				return val;

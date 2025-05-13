@@ -275,7 +275,9 @@ class Interp {
 	public function setVar(name:String, v:Dynamic):Void {
 		if (_inCustomClass && _proxy.superClass != null) {
 			if (_proxy.superIsCustomClass) {
+				_proxy.__allowInnerAccess = true;
 				cast(_proxy.superClass, CustomClass).hset(name, v);
+				_proxy.__allowInnerAccess = false;
 			}
 			else if (_proxy.superHasField(name)) {
 				Reflect.setProperty(_proxy.superClass, name, v);
@@ -299,7 +301,9 @@ class Interp {
 				if (_inCustomClass) {
 					if (_proxy.__class.hasField(id)) {
 						var v = expr(e2);
+						_proxy.__class.__allowInnerAccess = true;
 						_proxy.__class.hset(id, v);
+						_proxy.__class.__allowInnerAccess = false;
 						return v;
 					} 
 					/*
@@ -324,7 +328,9 @@ class Interp {
 					else {
 						try {
 							var v = expr(e2);
+							_proxy.__allowInnerAccess = true;
 							_proxy.hset(id, v); // superClass check already handled in Custom Class
+							_proxy.__allowInnerAccess = false;
 							return v;
 						}
 						catch(e) {}
@@ -405,7 +411,9 @@ class Interp {
 								else {
 									try {
 										var v = expr(e2);
+										_proxy.__allowInnerAccess = true;
 										_proxy.hset(f, v);
+										_proxy.__allowInnerAccess = false;
 										return v;
 									}
 									catch(e){}
@@ -448,7 +456,9 @@ class Interp {
 				// Also ensures property functions are accounted for.
 				if(_inCustomClass) {
 					if (_proxy.__class.hasField(id)) {
+						_proxy.__class.__allowInnerAccess = true;
 						_proxy.__class.hset(id, v);
+						_proxy.__class.__allowInnerAccess = false;
 						return v;
 					}
 					/*
@@ -467,7 +477,9 @@ class Interp {
 					}
 					else {
 						try {
+							_proxy.__allowInnerAccess = true;
 							_proxy.hset(id, v); // superClass check already handled in Custom Class
+							_proxy.__allowInnerAccess = false;
 							return v;
 						}
 						catch(e) {}
@@ -552,7 +564,9 @@ class Interp {
 								else {
 									try {
 										v = fop(get(obj, f), expr(e2));
+										_proxy.__allowInnerAccess = true;
 										_proxy.hset(f, v); // superClass check already handled in Custom Class
+										_proxy.__allowInnerAccess = false;
 										return v;
 									}
 									catch(e) {}
@@ -762,11 +776,20 @@ class Interp {
 		// Custom Class
 		if (_inCustomClass) {
 			// Static access
-			if (_proxy.__class.hasField(id)) 
-				return _proxy.__class.hget(id);
+			if (_proxy.__class.hasField(id))  {
+				_proxy.__class.__allowInnerAccess = true;
+				var r = _proxy.__class.hget(id);
+				_proxy.__class.__allowInnerAccess = false;
+				return r;
+			}
 			
-			if (_proxy.hasVar(id)) 
-				return _proxy.hget(id);
+			
+			if (_proxy.hasVar(id))  {
+				_proxy.__allowInnerAccess = true;
+				var r = _proxy.hget(id);
+				_proxy.__allowInnerAccess = false;
+				return r;
+			}
 			// We are calling a LOCAL function from the same module.
 			if (_proxy.hasFunction(id)) {
 				_nextCallObject = _proxy;
@@ -777,12 +800,15 @@ class Interp {
 				return Reflect.getProperty(_proxy.superClass, id);
 			} else {
 				try {
+					_proxy.__allowInnerAccess = true;
 					var r = _proxy.hget(id);
 					_nextCallObject = _proxy;
+					_proxy.__allowInnerAccess = false;
 					return r;
 				} catch (e:Dynamic) {
 					if(doException)
 						error(EUnknownVariable(id));
+					_proxy.__allowInnerAccess = false;
 				}
 			}
 		}

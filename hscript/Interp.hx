@@ -152,6 +152,7 @@ class Interp {
 	var returnValue:Dynamic;
 
 	var isBypassAccessor:Bool = false;
+	var isPrivateAccess:Bool = false;
 
 	public var importEnabled:Bool = true;
 
@@ -275,12 +276,14 @@ class Interp {
 	public function setVar(name:String, v:Dynamic):Void {
 		if (_inCustomClass && _proxy.superClass != null) {
 			if (_proxy.superIsCustomClass) {
-				_proxy.__allowInnerAccess = true;
+				_proxy.__allowPrivateAccess = true;
 				cast(_proxy.superClass, CustomClass).hset(name, v);
-				_proxy.__allowInnerAccess = false;
+				_proxy.__allowPrivateAccess = false;
+				return;
 			}
 			else if (_proxy.superHasField(name)) {
 				Reflect.setProperty(_proxy.superClass, name, v);
+				return;
 			}
 		}
 
@@ -301,24 +304,11 @@ class Interp {
 				if (_inCustomClass) {
 					if (_proxy.__class.hasField(id)) {
 						var v = expr(e2);
-						_proxy.__class.__allowInnerAccess = true;
+						_proxy.__class.__allowPrivateAccess = true;
 						_proxy.__class.hset(id, v);
-						_proxy.__class.__allowInnerAccess = false;
+						_proxy.__class.__allowPrivateAccess = false;
 						return v;
 					} 
-					/*
-					else if (_proxy.superClass != null && _proxy.superHasField(id)) {
-						var v = expr(e2);
-						//Reflect.setProperty(_proxy.superClass, id, v);
-						_proxy.hset(id, v);
-						return v;
-					} 
-					else if (_proxy.hasVar(id)) {
-						var v = expr(e2);
-						_proxy.hset(id, v);
-						return v;
-					} 
-					*/
 					if (_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(id)) {
 						// Caches the declaration to set it once superClass is created
 						var v = expr(e2);
@@ -328,12 +318,14 @@ class Interp {
 					else {
 						try {
 							var v = expr(e2);
-							_proxy.__allowInnerAccess = true;
+							_proxy.__allowPrivateAccess = true;
 							_proxy.hset(id, v); // superClass check already handled in Custom Class
-							_proxy.__allowInnerAccess = false;
+							_proxy.__allowPrivateAccess = false;
 							return v;
 						}
-						catch(e) {}
+						catch(e) {
+							_proxy.__allowPrivateAccess = false;
+						}
 					}
 				}
 				var l = locals.get(id);
@@ -347,13 +339,20 @@ class Interp {
 						} 
 						else if(_scriptObjectType == SAccessBehaviourObject) {
 							var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
-							if(isBypassAccessor) {
+							var oldAccessor = obj.__allowSetGet;
+							var oldPrivate = obj.__allowPrivateAccess;
+
+							if (isBypassAccessor)
 								obj.__allowSetGet = false;
-								var res = obj.hset(id, v);
-								obj.__allowSetGet = true;
-								return res;
-							}
-							return obj.hset(id, v);
+							if (isPrivateAccess)
+								obj.__allowPrivateAccess = true;
+
+							var res = obj.hset(id, v);
+
+							obj.__allowSetGet = oldAccessor;
+							obj.__allowPrivateAccess = oldPrivate;
+
+							return res;
 						}
 						else if (_scriptObjectType == SBehaviourClass) {
 							var obj:IHScriptCustomBehaviour = cast scriptObject;
@@ -388,20 +387,6 @@ class Interp {
 					switch (Tools.expr(e)) {
 						case EIdent(id0):
 							if (id0 == "this") {
-								/*
-								if (_proxy.hasField(f)) {
-									var v = expr(e2);
-									_proxy.hset(f, v);
-									return v;
-								}
-								if (_proxy.superClass != null) {
-									if (_proxy.superHasField(f)) {
-										var v = expr(e2);
-										Reflect.setProperty(_proxy.superClass, f, v);
-										return v;
-									}
-								}
-								*/
 								if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(f)){
 									// Caches the declaration to set it once superClass is created
 									var v = expr(e2);
@@ -411,12 +396,14 @@ class Interp {
 								else {
 									try {
 										var v = expr(e2);
-										_proxy.__allowInnerAccess = true;
+										_proxy.__allowPrivateAccess = true;
 										_proxy.hset(f, v);
-										_proxy.__allowInnerAccess = false;
+										_proxy.__allowPrivateAccess = false;
 										return v;
 									}
-									catch(e){}
+									catch(e){
+										_proxy.__allowPrivateAccess = false;
+									}
 								}
 							}
 						default:
@@ -456,9 +443,9 @@ class Interp {
 				// Also ensures property functions are accounted for.
 				if(_inCustomClass) {
 					if (_proxy.__class.hasField(id)) {
-						_proxy.__class.__allowInnerAccess = true;
+						_proxy.__class.__allowPrivateAccess = true;
 						_proxy.__class.hset(id, v);
-						_proxy.__class.__allowInnerAccess = false;
+						_proxy.__class.__allowPrivateAccess = false;
 						return v;
 					}
 					/*
@@ -477,12 +464,14 @@ class Interp {
 					}
 					else {
 						try {
-							_proxy.__allowInnerAccess = true;
+							_proxy.__allowPrivateAccess = true;
 							_proxy.hset(id, v); // superClass check already handled in Custom Class
-							_proxy.__allowInnerAccess = false;
+							_proxy.__allowPrivateAccess = false;
 							return v;
 						}
-						catch(e) {}
+						catch(e) {
+							_proxy.__allowPrivateAccess = false;
+						}
 					}
 				}
 				var l = locals.get(id);
@@ -496,13 +485,21 @@ class Interp {
 						} 
 						else if(_scriptObjectType == SAccessBehaviourObject) {
 							var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
-							if(isBypassAccessor) {
+
+							var oldAccessor = obj.__allowSetGet;
+							var oldPrivate = obj.__allowPrivateAccess;
+
+							if (isBypassAccessor)
 								obj.__allowSetGet = false;
-								var res = obj.hset(id, v);
-								obj.__allowSetGet = true;
-								return res;
-							}
-							return obj.hset(id, v);
+							if (isPrivateAccess)
+								obj.__allowPrivateAccess = true;
+
+							var res = obj.hset(id, v);
+
+							obj.__allowSetGet = oldAccessor;
+							obj.__allowPrivateAccess = oldPrivate;
+
+							return res;
 						}
 						else if (_scriptObjectType == SBehaviourClass) {
 							var obj:IHScriptCustomBehaviour = cast scriptObject;
@@ -541,20 +538,6 @@ class Interp {
 					switch(Tools.expr(e)) {
 						case EIdent(_id):
 							if (_id == 'this') {
-								/*
-								if (_proxy.hasField(f)) {
-									v = fop(get(obj, f), expr(e2));
-									_proxy.hset(f, v);
-									return v;
-								}
-								if (_proxy.superClass != null) {
-									if(_proxy.superHasField(f)) {
-										v = fop(get(obj, f), expr(e2));
-										Reflect.setProperty(_proxy.superClass, f, v);
-										return v;
-									}
-								}
-								*/
 								if(_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(f)){
 									// Caches the declaration to set it once superClass is created
 									v = fop(get(obj, f), expr(e2));
@@ -564,12 +547,14 @@ class Interp {
 								else {
 									try {
 										v = fop(get(obj, f), expr(e2));
-										_proxy.__allowInnerAccess = true;
+										_proxy.__allowPrivateAccess = true;
 										_proxy.hset(f, v); // superClass check already handled in Custom Class
-										_proxy.__allowInnerAccess = false;
+										_proxy.__allowPrivateAccess = false;
 										return v;
 									}
-									catch(e) {}
+									catch(e) {
+										_proxy.__allowPrivateAccess = false;
+									}
 								}
 							}
 						default:
@@ -777,17 +762,17 @@ class Interp {
 		if (_inCustomClass) {
 			// Static access
 			if (_proxy.__class.hasField(id))  {
-				_proxy.__class.__allowInnerAccess = true;
+				_proxy.__class.__allowPrivateAccess = true;
 				var r = _proxy.__class.hget(id);
-				_proxy.__class.__allowInnerAccess = false;
+				_proxy.__class.__allowPrivateAccess = false;
 				return r;
 			}
 			
 			
 			if (_proxy.hasVar(id))  {
-				_proxy.__allowInnerAccess = true;
+				_proxy.__allowPrivateAccess = true;
 				var r = _proxy.hget(id);
-				_proxy.__allowInnerAccess = false;
+				_proxy.__allowPrivateAccess = false;
 				return r;
 			}
 			// We are calling a LOCAL function from the same module.
@@ -800,15 +785,15 @@ class Interp {
 				return Reflect.getProperty(_proxy.superClass, id);
 			} else {
 				try {
-					_proxy.__allowInnerAccess = true;
+					_proxy.__allowPrivateAccess = true;
 					var r = _proxy.hget(id);
 					_nextCallObject = _proxy;
-					_proxy.__allowInnerAccess = false;
+					_proxy.__allowPrivateAccess = false;
 					return r;
 				} catch (e:Dynamic) {
 					if(doException)
 						error(EUnknownVariable(id));
-					_proxy.__allowInnerAccess = false;
+					_proxy.__allowPrivateAccess = false;
 				}
 			}
 		}
@@ -825,13 +810,21 @@ class Interp {
 			}
 			else if(_scriptObjectType == SAccessBehaviourObject) {
 				var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
-				if(isBypassAccessor) {
+
+				var oldAccessor = obj.__allowSetGet;
+				var oldPrivate = obj.__allowPrivateAccess;
+
+				if (isBypassAccessor)
 					obj.__allowSetGet = false;
-					var res = obj.hget(id);
-					obj.__allowSetGet = true;
-					return res;
-				}
-				return obj.hget(id);
+				if (isPrivateAccess)
+					obj.__allowPrivateAccess = true;
+
+				var res = obj.hget(id);
+
+				obj.__allowSetGet = oldAccessor;
+				obj.__allowPrivateAccess = oldPrivate;
+
+				return res;
 			} else if(_scriptObjectType == SBehaviourClass) {
 				var obj:IHScriptCustomBehaviour = cast scriptObject;
 				return obj.hget(id);
@@ -1427,6 +1420,22 @@ class Interp {
 					val = def == null ? null : expr(def);
 				return val;
 			case EMeta(a, b, e):
+				var val:Dynamic = null;
+				switch(a) {
+					case ":bypassAccessor":
+						var oldAccessor = isBypassAccessor;
+						isBypassAccessor = true;
+						val = expr(e);
+						isBypassAccessor = oldAccessor;
+						return val;
+					case ":privateAccess":
+						var oldPrivate = isPrivateAccess;
+						isPrivateAccess = true;
+						val = expr(e);
+						isPrivateAccess = oldPrivate;
+						return val;
+				}
+				/*
 				var oldAccessor = isBypassAccessor;
 				if(a == ":bypassAccessor") {
 					isBypassAccessor = true;
@@ -1434,6 +1443,8 @@ class Interp {
 				var val = expr(e);
 
 				isBypassAccessor = oldAccessor;
+				return val;
+				*/
 				return val;
 			case ECheckType(e, _):
 				return expr(e);
@@ -1654,13 +1665,21 @@ class Interp {
 		}
 		if (o is IHScriptCustomAccessBehaviour) {
 			var obj:IHScriptCustomAccessBehaviour = cast o;
-			if(isBypassAccessor) {
+
+			var oldAccessor = obj.__allowSetGet;
+			var oldPrivate = obj.__allowPrivateAccess;
+
+			if(isBypassAccessor)
 				obj.__allowSetGet = false;
-				var res = obj.hget(f);
-				obj.__allowSetGet = true;
-				return res;
-			}
-			return obj.hget(f);
+			if(isPrivateAccess)
+				obj.__allowPrivateAccess = true;
+
+			var res = obj.hget(f);
+
+			obj.__allowSetGet = oldAccessor;
+			obj.__allowPrivateAccess = oldPrivate;
+			
+			return res;
 		}
 
 		if (o is IHScriptCustomBehaviour) {

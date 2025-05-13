@@ -45,7 +45,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	private var __cachedVarDecls:Map<String, VarDecl> = [];
 
 	public var __allowSetGet:Bool = false;
-	public var __allowInnerAccess:Bool = false;
+	public var __allowPrivateAccess:Bool = false;
 
 	private var isInline(default, null):Bool = false;
 	private var ogVariables(default, null):Map<String, Dynamic>;
@@ -326,7 +326,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 					
 					var value:Dynamic = null;
 
-					if(getter == ANever || getter == ANull && !__allowInnerAccess)
+					if(getter == ANever || getter == ANull && !__allowPrivateAccess)
 						throw 'field $name cannot be accessed for reading';
 
 					if (__allowSetGet && getter == AGet) {
@@ -382,7 +382,7 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 					var v = getVar(name);
 					var setter = v.set;
 
-					if (setter == ANever || setter == ANull && !__allowInnerAccess || (v.isFinal && !initializing))
+					if (setter == ANever || setter == ANull && !__allowPrivateAccess || (v.isFinal && !initializing))
 						throw 'field $name cannot be accessed for writing';
 
 					if (__allowSetGet && setter == ASet) {

@@ -31,7 +31,7 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 	public var __allowSetGet:Bool = true;
 
-	public var __allowInnerAccess:Bool = false;
+	public var __allowPrivateAccess:Bool = false;
 
 	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, ?pkg:Array<String>, ?ogInterp:Interp, ?isInline:Bool) {
 		this.classDecl = classDecl;
@@ -192,7 +192,7 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 			var r:Dynamic = null;
 
-			if (getter == ANever || getter == ANull && !__allowInnerAccess)
+			if (getter == ANever || getter == ANull && !__allowPrivateAccess)
 				throw 'field $name cannot be accessed for reading';
 
 			if(__allowSetGet && getter == AGet){
@@ -227,7 +227,7 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 			var v = getVar(name);
 			var setter = v.set;
 
-			if (setter == ANever || setter == ANull && !__allowInnerAccess || v.isFinal)
+			if (setter == ANever || setter == ANull && !__allowPrivateAccess || v.isFinal)
 				throw 'field $name cannot be accessed for writing';
 
 			if (__allowSetGet && setter == ASet) {

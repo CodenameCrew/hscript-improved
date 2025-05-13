@@ -23,7 +23,7 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 		this.extend = extend;
 		this.interfaces = interfaces;
 
-		this.cl = extend == null ? CustomTemplateClass : Type.resolveClass('${extend}_HSX');
+		//this.cl = extend == null ? CustomTemplateClass : Type.resolveClass('${extend}_HSX');
 		if(cl == null)
 			ogInterp.error(EInvalidClass(extend));
 	}
@@ -155,7 +155,7 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 		return name;
 	}
 }
-
+/*
 class CustomTemplateClass implements IHScriptCustomClassBehaviour implements IHScriptCustomAccessBehaviour {
 	public var __interp:Interp;
 	public var __customClass:hscript.customclass.CustomClass;
@@ -202,10 +202,11 @@ class CustomTemplateClass implements IHScriptCustomClassBehaviour implements IHS
 	}
 }
 
+*/
+/*
 
-/**
- * This is for backwards compatibility with old hscript-improved, since some scripts use it
-**/
+This is for backwards compatibility with old hscript-improved, since some scripts use it
+
 @:dox(hide)
 @:keep
 class TemplateClass implements IHScriptCustomBehaviour implements IHScriptCustomAccessBehaviour {
@@ -240,7 +241,7 @@ class TemplateClass implements IHScriptCustomBehaviour implements IHScriptCustom
 		return v;
 	}
 }
-
+*/
 final class StaticHandler {
 	public function new() {}
 }

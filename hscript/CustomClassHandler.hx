@@ -203,15 +203,17 @@ class CustomTemplateClass implements IHScriptCustomClassBehaviour implements IHS
 }
 
 */
-/*
 
-This is for backwards compatibility with old hscript-improved, since some scripts use it
 
+/**
+ * This is for backwards compatibility with old hscript-improved, since some scripts use it
+ */
 @:dox(hide)
 @:keep
 class TemplateClass implements IHScriptCustomBehaviour implements IHScriptCustomAccessBehaviour {
 	public var __interp:Interp;
 	public var __allowSetGet:Bool = true;
+	public var __allowPrivateAccess:Bool = true;
 
 	public function hset(name:String, val:Dynamic):Dynamic {
 		var variables = __interp.variables;
@@ -241,7 +243,8 @@ class TemplateClass implements IHScriptCustomBehaviour implements IHScriptCustom
 		return v;
 	}
 }
-*/
+/*
 final class StaticHandler {
 	public function new() {}
 }
+*/

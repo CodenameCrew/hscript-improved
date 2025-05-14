@@ -275,18 +275,21 @@ class Interp {
 
 	public function setVar(name:String, v:Dynamic):Void {
 		if (_inCustomClass && _proxy.superClass != null) {
-			if (_proxy.superIsCustomClass) {
-				var oldPrivate = _proxy.__allowPrivateAccess;
-				_proxy.__allowPrivateAccess = true;
-				cast(_proxy.superClass, CustomClass).hset(name, v);
-				_proxy.__allowPrivateAccess = oldPrivate;
-				return;
-			}
-			else if (_proxy.superHasField(name)) {
+			if (_proxy.superHasField(name)) {
+				if (_proxy.superIsCustomClass) {
+					var oldPrivate = _proxy.__allowPrivateAccess;
+					_proxy.__allowPrivateAccess = true;
+					cast(_proxy.superClass, CustomClass).hset(name, v);
+					_proxy.__allowPrivateAccess = oldPrivate;
+					return;
+				} 
+				
 				Reflect.setProperty(_proxy.superClass, name, v);
 				return;
+				
 			}
 		}
+		// Fallback to setting in local scope.
 
 		if (allowStaticVariables && staticVariables.exists(name))
 			staticVariables.set(name, v);
@@ -300,7 +303,6 @@ class Interp {
 		var v = expr(e2);
 		switch (Tools.expr(e1)) {
 			case EIdent(id):
-				// TODO: redo field check
 				// Make sure setting superclass/static fields directly works.
 				// Also ensures property functions are accounted for.
 				if (_inCustomClass) {
@@ -312,13 +314,14 @@ class Interp {
 						_proxy.__class.__allowPrivateAccess = oldPrivate;
 						return v;
 					} 
+
 					if (_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(id)) {
 						// Caches the declaration to set it once superClass is created
 						var v = expr(e2);
 						_proxy.cacheSuperField(id, v);
 						return v;
 					}
-					else {
+					else if(_proxy.hasField(id) || _proxy.superHasField(id)){
 						var oldPrivate = _proxy.__allowPrivateAccess;
 						try {
 							var v = expr(e2);
@@ -333,6 +336,7 @@ class Interp {
 						}
 					}
 				}
+				// Fallback, which calls set()
 				var l = locals.get(id);
 				if (l == null) {
 					if (_hasScriptObject && !varExists(id)) {
@@ -398,7 +402,7 @@ class Interp {
 									_proxy.cacheSuperField(f, v);
 									return v;
 								}
-								else {
+								else if (_proxy.hasField(f) || _proxy.superHasField(f)) {
 									var oldPrivate = _proxy.__allowPrivateAccess;
 									try {
 										var v = expr(e2);
@@ -455,21 +459,12 @@ class Interp {
 						_proxy.__class.__allowPrivateAccess = oldPrivate;
 						return v;
 					}
-					/*
-					else if (_proxy.superClass != null && _proxy.superHasField(id)) {
-						Reflect.setProperty(_proxy.superClass, id, v);
-						return v;
-					}
-					else if (_proxy.hasVar(id)) {
-						_proxy.hset(id, v);
-						return v;
-					}
-					*/
+					
 					else if ((_proxy.superClass == null && _proxy.__class.classDecl.extend != null && !_proxy.hasVar(id))) {
 						_proxy.cacheSuperField(id, v);
 						return v;
 					}
-					else {
+					else if (_proxy.hasField(id) || _proxy.superHasField(id)) {
 						var oldPrivate = _proxy.__allowPrivateAccess;
 						try {
 							_proxy.__allowPrivateAccess = true;
@@ -552,7 +547,7 @@ class Interp {
 									_proxy.cacheSuperField(f, v);
 									return v;
 								}
-								else {
+								else if (_proxy.hasField(f) || _proxy.superHasField(f)) {
 									var oldPrivate = _proxy.__allowPrivateAccess;
 									try {
 										v = fop(get(obj, f), expr(e2));
@@ -787,13 +782,14 @@ class Interp {
 				return r;
 			}
 			// We are calling a LOCAL function from the same module.
+			// TODO: optimize this
 			if (_proxy.hasFunction(id)) {
 				_nextCallObject = _proxy;
 				return _proxy.hget(id);
 			}
 			if (_proxy.superHasField(id)) {
 				_nextCallObject = _proxy.superClass;
-				return Reflect.getProperty(_proxy.superClass, id);
+				return !_proxy.superIsCustomClass ? Reflect.getProperty(_proxy.superClass, id) : _proxy.hget(id);
 			} else {
 				var oldPrivate = _proxy.__allowPrivateAccess;
 				try {
@@ -803,9 +799,9 @@ class Interp {
 					_proxy.__allowPrivateAccess = oldPrivate;
 					return r;
 				} catch (e:Dynamic) {
+					_proxy.__allowPrivateAccess = oldPrivate;
 					if(doException)
 						error(EUnknownVariable(id));
-					_proxy.__allowPrivateAccess = oldPrivate;
 				}
 			}
 		}
@@ -1729,13 +1725,21 @@ class Interp {
 			return _setRedirect(o, f, v);
 		if (o is IHScriptCustomAccessBehaviour) {
 			var obj:IHScriptCustomAccessBehaviour = cast o;
-			if(isBypassAccessor) {
+
+			var oldAccessor = obj.__allowSetGet;
+			var oldPrivate = obj.__allowPrivateAccess;
+
+			if(isBypassAccessor)
 				obj.__allowSetGet = false;
-				var res = obj.hset(f, v);
-				obj.__allowSetGet = true;
-				return res;
-			}
-			return obj.hset(f, v);
+			if(isPrivateAccess)
+				obj.__allowPrivateAccess = true;
+
+			var res = obj.hset(f, v);
+
+			obj.__allowSetGet = oldAccessor;
+			obj.__allowPrivateAccess = oldPrivate;
+			
+			return res;
 		}
 
 		if (o is IHScriptCustomBehaviour) {
@@ -1866,7 +1870,7 @@ class Interp {
 			// Force call super function.
 			if(o == _proxy.superClass) {
 				if(_proxy.superIsCustomClass)
-					cast(_proxy.superClass, CustomClass).callFunction(f, args);
+					return cast(_proxy.superClass, CustomClass).callFunction(f, args);
 				else
 					return call(o, Reflect.field(_proxy.superClass, '_HX_SUPER__${f}'), args);
 			}	
@@ -1898,12 +1902,15 @@ class Interp {
 
 	function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic {
 		if (_inCustomClass) {
+			// Calling fn() in hscript won't resolve an object first. Thus, we need to change it to use this.fn() instead.
 			if (o == null && _nextCallObject != null) {
 				o = _nextCallObject;
 			}
+
 			if (f == null) {
 				error(EInvalidAccess(f));
 			}
+			
 			if (o == _proxy) {
 				// If we are calling this.fn(), special handling is needed to prevent the local scope from being destroyed.
 				// By checking `o == _proxy`, we handle BOTH fn() and this.fn().

@@ -278,15 +278,36 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 	}
 
 	var __superClassFieldList:Array<String> = null;
-	// ONLY FOR REAL CLASSES. CUSTOM CLASSES CHECKS FOR THEIR FIELDS ON `hget/hset`
+	
 	public function superHasField(name:String):Bool {
 		if (superClass == null)
 			return false;
 
 		// Reflect.hasField(this, name) is REALLY expensive so we use a cache.
 		if (__superClassFieldList == null) {
-			var realFields = Reflect.fields(superClass).concat(Type.getInstanceFields(Type.getClass(superClass)));
-			__superClassFieldList = realFields;
+			__superClassFieldList = [];
+
+			if(superClass is CustomClass) {
+				var cls:Null<Dynamic> = superClass;
+				while(cls != null && cls is CustomClass) {
+					var currentClass = cast(cls, CustomClass);
+					var fields = [for(f in currentClass.__cachedFieldDecls.keys()) f];
+					__superClassFieldList.concat(fields);
+
+					var next = currentClass.superClass;
+					if(next == null)
+						break;
+					cls = next;
+				}
+				
+				// The last fetched class is a real class
+				if(!(cls is CustomClass))
+					__superClassFieldList.concat(Reflect.fields(cls).concat(Type.getInstanceFields(Type.getClass(cls))));
+			}
+			else {
+				var realFields = Reflect.fields(superClass).concat(Type.getInstanceFields(Type.getClass(superClass)));
+				__superClassFieldList.concat(realFields);
+			}
 		}
 
 		return __superClassFieldList.indexOf(name) != -1;
@@ -348,25 +369,30 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 				}
 
 				if (this.superClass != null) {
-					if (Type.getClass(this.superClass) == null) {
-						// Anonymous structure
-						if (Reflect.hasField(this.superClass, name)) 
-							return Reflect.field(this.superClass, name);
-						else 
-							throw "field '" + name + "' does not exist in custom class '" + this.className + "' or super class '[ANONYMOUS STRUCTURE]'";
-					}
+					if (superHasField(name)) {
+						if (Type.getClass(this.superClass) == null) {
+							// Anonymous structure
+							if (Reflect.hasField(this.superClass, name))
+								return Reflect.field(this.superClass, name);
+							else
+								throw "field '" + name + "' does not exist in custom class '" + this.className + "' or super class '[ANONYMOUS STRUCTURE]'";
+						}
 
-					if (this.superClass is CustomClass) {
-						var superCustomClass:CustomClass = cast(this.superClass, CustomClass);
-						
-						superCustomClass.__allowSetGet = this.__allowSetGet;
-						return superCustomClass.hget(name);
+						if (this.superClass is CustomClass) {
+							var superCustomClass:CustomClass = cast(this.superClass, CustomClass);
+
+							superCustomClass.__allowSetGet = this.__allowSetGet;
+							superCustomClass.__allowPrivateAccess = this.__allowPrivateAccess;
+							return superCustomClass.hget(name);
+						}
+
+						// Real Class
+						if (__allowSetGet)
+							Reflect.getProperty(this.superClass, name);
+						else 
+							Reflect.field(this.superClass, name);
 					}
-					// Real Class
-					var fields = Type.getInstanceFields(Type.getClass(this.superClass));
-					if (fields.contains(name))
-						return __allowSetGet ? Reflect.getProperty(this.superClass, name) : Reflect.field(this.superClass, name);
-					else 
+					else
 						throw "field '" + name + "' does not exist in custom class '" + this.className + "' or super class '" + Type.getClassName(Type.getClass(this.superClass)) + "'";
 				} 
 				else 
@@ -393,27 +419,33 @@ class CustomClass implements IHScriptCustomAccessBehaviour {
 					}
 
 					this.interp.variables.set(name, val);
-				} else if (this.superClass != null) {
-					if (this.superClass is CustomClass) {
-						var superCustomClass:CustomClass = cast(this.superClass, CustomClass);
-						
-						superCustomClass.__allowSetGet = this.__allowSetGet;
-						return superCustomClass.hset(name, val);
-					}
-					// Real Class
-					if (Type.getClass(this.superClass) == null) {
-						// Anonymous structure
-						if (Reflect.hasField(this.superClass, name)) 
-							Reflect.setField(this.superClass, name, val);
-						
-						return val;
-					} 
-					else if (superHasField(name)) {
+				} 
+				else if (this.superClass != null) {
+					if (superHasField(name)) {
+						if (Type.getClass(this.superClass) == null) {
+							// Anonymous structure
+							if (Reflect.hasField(this.superClass, name)) {
+								Reflect.setField(this.superClass, name, val);
+								return val;
+							}
+							else 
+								throw "field '" + name + "' does not exist in custom class '" + this.className + "' or super class '[ANONYMOUS STRUCTURE]'";
+						} 
+
+						if (this.superClass is CustomClass) {
+							var superCustomClass:CustomClass = cast(this.superClass, CustomClass);
+
+							superCustomClass.__allowSetGet = this.__allowSetGet;
+							superCustomClass.__allowPrivateAccess = this.__allowPrivateAccess;
+							return superCustomClass.hset(name, val);
+						}
+						// Real Class
+
 						if (__allowSetGet)
 							Reflect.setProperty(this.superClass, name, val);
 						else
 							Reflect.setField(this.superClass, name, val);
-					} 
+					}
 					else 
 						throw "field '" + name + "' does not exist in custom class '" + this.className + "' or super class '" + Type.getClassName(Type.getClass(this.superClass)) + "'";
 				} 

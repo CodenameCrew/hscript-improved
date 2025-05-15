@@ -856,9 +856,9 @@ class Parser {
 			}
 			var ident = getIdent();
 			var get = ADefault, set = ADefault;
+			var hasGetSet:Bool = false;
 			var tk = token();
 			// TODO: throw "Missing ;" if tried to use (get, set) on final
-			// and "Property requires type-hint or initialization" on missing type.
 			if( tk == TPOpen && id != "final" ) {
 				var getId = getIdent();
 				switch (getId) {
@@ -879,6 +879,8 @@ class Parser {
 				}
 				ensure(TPClose);
 
+				hasGetSet = true;
+
 				tk = token();
 			}
 
@@ -895,6 +897,10 @@ class Parser {
 				e = parseExpr();
 			else
 				push(tk);
+
+			if(hasGetSet && (e == null || (allowTypes && t == null)))
+				error(ECustom("Property requires type-hint or initialization"), p1, tokenMax);
+
 			nextType = null;
 			mk(EVar(ident, t, e, nextIsPublic, nextIsStatic, nextIsPrivate, id == "final", nextIsInline), p1, (e == null) ? tokenMax : pmax(e));
 		case "while":
@@ -1119,10 +1125,10 @@ class Parser {
 					mk(EIgnore(true));
 				case CTPath(path, params):
 					if (params != null && params.length > 1)
-						error(ECustom("Typedefs can't have parameters"), tokenMin, tokenMax);
+						error(ECustom("Typedefs can't have parameters"), p1, tokenMax);
 
 					if (path.length == 0)
-						error(ECustom("Typedefs can't be empty"), tokenMin, tokenMax);
+						error(ECustom("Typedefs can't be empty"), p1, tokenMax);
 
 					var className = path.join(".");
 					var cl = Tools.getClass(className);
@@ -1137,7 +1143,7 @@ class Parser {
 					// todo? add import to the beginning of the file?
 					mk(EVar(name, null, expr));
 				default:
-					error(ECustom("Typedef, unknown type " + t), tokenMin, tokenMax);
+					error(ECustom("Typedef, unknown type " + t), p1, tokenMax);
 					null;
 			}
 		case "using":
@@ -1805,8 +1811,8 @@ class Parser {
 				case "var" | "final":
 					var name = getIdent();
 					var get = ADefault, set = ADefault;
+					var hasGetSet:Bool = false;
 					// TODO: throw "Missing ;" if tried to use (get, set) on final
-					// and "Property requires type-hint or initialization" on missing type.
 					if(maybe(TPOpen) && id != "final") {
 						var getId = getIdent();
 						switch(getId) {
@@ -1826,9 +1832,13 @@ class Parser {
 							default: unexpected(TId(getId));
 						}
 						ensure(TPClose);
+						hasGetSet = true;
 					}
 					var type = maybe(TDoubleDot) ? parseType() : null;
 					var expr = maybe(TOp("=")) ? parseExpr() : null;
+
+					if(hasGetSet && (expr == null || type == null))
+						error(ECustom("Property requires type-hint or initialization"), p1, tokenMax);
 
 					if( expr != null ) {
 						if( isBlock(expr) )

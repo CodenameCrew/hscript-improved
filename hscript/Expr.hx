@@ -237,3 +237,8 @@ enum abstract FieldPropertyAccess(UInt8) {
 	var AGet;
 	var ASet;
 }
+
+enum AccessContext {
+	CInner(cl:String);
+	COuter;
+}

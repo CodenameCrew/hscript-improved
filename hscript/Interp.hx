@@ -168,7 +168,7 @@ class Interp {
 	var curExpr:Expr;
 	#end
 
-	var _proxy(default, null):Null<CustomClass> = null;
+	var _proxy(default, null):Null<CustomClass> = null; // Like "scriptObject" but for Custom Classes
 	var _nextCallObject(default, null):Dynamic = null;
 	var _inCustomClass(get, never):Bool;
 
@@ -742,7 +742,6 @@ class Interp {
 				var r = _proxy.__class.hget(id);
 				return r;
 			}
-			
 			
 			if (_proxy.hasVar(id))  {
 				var r = _proxy.hget(id);
@@ -1625,6 +1624,8 @@ class Interp {
 				var clsName:String = cast(o, CustomClass).className;
 				error(ECustom('The field ${clsName}.${f} should be accessed in a static way.'));
 			}
+
+			cast(o, CustomClass).accessContext = _inCustomClass ? CInner(_proxy.className) : COuter;
 		}
 
 		var cls = Type.getClass(o);
@@ -1679,6 +1680,8 @@ class Interp {
 				var clsName:String = cast(o, CustomClass).className;
 				error(ECustom('The field ${clsName}.${f} should be accessed in a static way.'));
 			}
+
+			cast(o, CustomClass).accessContext = _inCustomClass ? CInner(_proxy.className) : COuter;
 		}
 
 		if (useRedirects && {

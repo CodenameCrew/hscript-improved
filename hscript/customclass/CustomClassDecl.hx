@@ -1,5 +1,6 @@
 package hscript.customclass;
 
+import hscript.Expr.AccessContext;
 import hscript.proxy.ProxyType;
 import hscript.customclass.utils.FunctionUtils;
 import haxe.Constraints.Function;
@@ -33,6 +34,10 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 
 	public var __allowPrivateAccess:Bool = false;
 
+	public var accessContext:AccessContext = COuter;
+
+	public final name:String;
+
 	public function new(classDecl:Expr.ClassDecl, imports:Map<String, CustomClassImport>, usings:Array<String>, ?pkg:Array<String>, ?ogInterp:Interp, ?isInline:Bool) {
 		this.classDecl = classDecl;
 		this.imports = imports;
@@ -40,6 +45,11 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 		this.pkg = pkg;
 		this.ogInterp = ogInterp;
 		this.isInline = isInline;
+
+		// Cache the classname
+		var pkg = pkg != null ? '${pkg.join(".")}.' : "";
+		var className = classDecl.name;
+		this.name = '$pkg$className';
 
 		if(ogInterp != null) {
 			staticInterp.importFailedCallback = ogInterp.importFailedCallback;
@@ -189,10 +199,14 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 		if(hasVar(name)) {
 			var v = getVar(name);
 			var getter = v.get;
+			var isInner = switch (accessContext) {
+				case CInner(cl): return cl == this.toString();
+				default: false;
+			}
 
 			var r:Dynamic = null;
 
-			if (getter == ANever || getter == ANull && !__allowPrivateAccess)
+			if (getter == ANever || getter == ANull && (!isInner || !__allowPrivateAccess))
 				throw 'field $name cannot be accessed for reading';
 
 			if(__allowSetGet && getter == AGet){
@@ -226,8 +240,12 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 		if (hasVar(name)) {
 			var v = getVar(name);
 			var setter = v.set;
+			var isInner = switch (accessContext) {
+				case CInner(cl): return cl == this.toString();
+				default: false;
+			}
 
-			if (setter == ANever || setter == ANull && !__allowPrivateAccess || v.isFinal)
+			if (setter == ANever || setter == ANull && (!isInner || !__allowPrivateAccess) || v.isFinal)
 				throw 'field $name cannot be accessed for writing';
 
 			if (__allowSetGet && setter == ASet) {
@@ -260,9 +278,7 @@ class CustomClassDecl implements IHScriptCustomAccessBehaviour {
 	}
 	
 	public function toString():String {
-		var pkg = pkg != null ? '${pkg.join(".")}.' : "";
-		var name = classDecl.name;
-		return '$pkg$name';
+		return name;
 	}
 }
 

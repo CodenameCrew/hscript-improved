@@ -65,6 +65,9 @@ enum abstract ScriptObjectType(UInt8) {
 class DeclaredVar {
 	public var r:Dynamic;
 	public var depth:Int;
+	// TODO: getter/setter for variables
+	public var getter:FieldPropertyAccess = null;
+	public var setter:FieldPropertyAccess = null;
 }
 
 @:structInit
@@ -878,7 +881,7 @@ class Interp {
 							};
 
 							customClassFields.push(fd);
-						case EVar(n, t, e, isPublic, isStatic, isPrivate, isFinal, isInline, getter, setter):
+						case EVar(n, t, e, isPublic, isStatic, _, isFinal, _, getter, setter):
 							var varAcc:Array<FieldAccess> = [];
 							if (isPublic) varAcc.push(APublic);
 							if (isStatic) varAcc.push(AStatic);
@@ -1020,7 +1023,7 @@ class Interp {
 				}
 			case EIdent(id):
 				return resolve(id);
-			case EVar(n, _, e, isPublic, isStatic):
+			case EVar(n, _, e, isPublic, isStatic, _, isFinal, _, getter, setter):
 				declared.push({n: n, old: locals.get(n), depth: depth});
 				locals.set(n, {r: (e == null) ? null : expr(e), depth: depth});
 				if (depth == 0) {

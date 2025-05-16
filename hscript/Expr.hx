@@ -233,9 +233,10 @@ enum EnumType {
 enum abstract FieldPropertyAccess(UInt8) {
 	var ADefault;
 	var ANull;
-	var ANever;
 	var AGet;
 	var ASet;
+	var ADynamic;
+	var ANever;
 }
 
 enum AccessContext {

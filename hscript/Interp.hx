@@ -65,9 +65,10 @@ enum abstract ScriptObjectType(UInt8) {
 class DeclaredVar {
 	public var r:Dynamic;
 	public var depth:Int;
+	public var isFinal:Null<Bool> = null;
 	// TODO: getter/setter for variables
-	public var getter:FieldPropertyAccess = null;
-	public var setter:FieldPropertyAccess = null;
+	public var getter:Null<FieldPropertyAccess> = null;
+	public var setter:Null<FieldPropertyAccess> = null;
 }
 
 @:structInit
@@ -156,6 +157,7 @@ class Interp {
 
 	var isBypassAccessor:Bool = false;
 	var isPrivateAccess:Bool = false;
+	//var isVar:Bool = false;
 
 	public var importEnabled:Bool = true;
 
@@ -379,6 +381,7 @@ class Interp {
 						setVar(id, v);
 					}
 				} else {
+					// TODO: call "set_" if available
 					l.r = v;
 					if (l.depth == 0) {
 						setVar(id, v);
@@ -509,6 +512,7 @@ class Interp {
 				}
 				else {
 					var l = locals.get(id);
+					// TODO: call "set_" if available
 					l.r = v;
 					if (l.depth == 0) {
 						setVar(id, v);
@@ -568,6 +572,7 @@ class Interp {
 		switch (e) {
 			case EIdent(id):
 				var l = locals.get(id);
+				// TODO: call "set_" if available
 				if(l != null) {
 					var v:Dynamic = l.r;
 					if (prefix) {
@@ -725,6 +730,7 @@ class Interp {
 
 		if (locals.exists(id)) {
 			var l = locals.get(id);
+			// TODO: call get or set if available.
 			if(l != null)
 				return l.r;
 		}
@@ -1024,8 +1030,19 @@ class Interp {
 			case EIdent(id):
 				return resolve(id);
 			case EVar(n, _, e, isPublic, isStatic, _, isFinal, _, getter, setter):
+				if(depth > 0 && (getter != null || setter != null)) {
+					error(ECustom("Property Accessor for local variables is not allowed"));
+					return null;
+				}
 				declared.push({n: n, old: locals.get(n), depth: depth});
-				locals.set(n, {r: (e == null) ? null : expr(e), depth: depth});
+				var declVar:DeclaredVar = {
+					r: (e == null) ? null : expr(e),
+					depth: depth,
+					isFinal: isFinal,
+					getter: getter,
+					setter: setter
+				};
+				locals.set(n, declVar);
 				if (depth == 0) {
 					if(allowStaticVariables && isStatic == true) {
 						if(!staticVariables.exists(n)) // make it so it only sets it once
@@ -1394,6 +1411,7 @@ class Interp {
 				return val;
 			case EMeta(a, b, e):
 				var val:Dynamic = null;
+
 				switch(a) {
 					case ":bypassAccessor":
 						var oldAccessor = isBypassAccessor;
@@ -1408,6 +1426,9 @@ class Interp {
 						isPrivateAccess = oldPrivate;
 						return val;
 				}
+
+				val = expr(e);
+				return val;
 				/*
 				var oldAccessor = isBypassAccessor;
 				if(a == ":bypassAccessor") {
@@ -1418,7 +1439,6 @@ class Interp {
 				isBypassAccessor = oldAccessor;
 				return val;
 				*/
-				return val;
 			case ECheckType(e, _):
 				return expr(e);
 			case EUsing(name):

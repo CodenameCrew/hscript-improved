@@ -103,6 +103,8 @@ class Parser {
 
 	var disableOrOp : Bool = false;
 
+	var isVar : Bool = false;
+
 	#if hscriptPos
 	var origin : String;
 	var tokenMin : Int;
@@ -857,16 +859,20 @@ class Parser {
 			var ident = getIdent();
 			var get = ADefault, set = ADefault;
 			var hasGetSet:Bool = false;
+
 			var tk = token();
-			// TODO: throw "Missing ;" if tried to use (get, set) on final
-			if( tk == TPOpen && id != "final" ) {
+			if( tk == TPOpen) {
+				if( id == "final" )
+					unexpected(tk);
+
 				var getId = getIdent();
 				switch (getId) {
 					case 'default': // Do nothing
 					case 'get': get = AGet;
 					case 'null': get = ANull;
+					case 'dynamic': get = ADynamic;
 					case 'never': get = ANever;
-					default: unexpected(TId(getId));
+					default: error(ECustom("Custom property accessor is not supported"), p1, tokenMax);
 				}
 				ensure(TComma);
 				var setId = getIdent();
@@ -874,8 +880,9 @@ class Parser {
 					case 'default': // Do nothing
 					case 'set': set = ASet;
 					case 'null': set = ANull;
+					case 'dynamic': set = ADynamic;
 					case 'never': set = ANever;
-					default: unexpected(TId(getId));
+					default: error(ECustom("Custom property accessor is not supported"), p1, tokenMax);
 				}
 				ensure(TPClose);
 
@@ -898,8 +905,8 @@ class Parser {
 			else
 				push(tk);
 
-			if(hasGetSet && (e == null || (allowTypes && t == null)))
-				error(ECustom("Property requires type-hint or initialization"), p1, tokenMax);
+			if(hasGetSet)
+				checkAccess(get, set, e, t);
 
 			nextType = null;
 			mk(EVar(ident, t, e, nextIsPublic, nextIsStatic, nextIsPrivate, id == "final", nextIsInline, get, set), p1, (e == null) ? tokenMax : pmax(e));
@@ -1604,6 +1611,24 @@ class Parser {
 		return args;
 	}
 
+	function checkAccess(get:FieldPropertyAccess, set:FieldPropertyAccess, ?expr:Expr, ?type:CType) {
+		#if hscriptPos
+		var p1 = tokenMin;
+		#end
+		switch([get, set]) {
+			case [AGet, ASet] | [AGet, ANever] | [ANever, ASet]:
+				if(expr != null && !isVar)
+					error(ECustom("Attempt to assign on field that is not a real variable"), p1, pmax(expr));
+				else if(type == null)
+					error(ECustom("Property requires type-hint"), p1, tokenMax);
+			case [ANever, ANever]:
+				error(ECustom("Unsupported property combination"), p1, (expr == null) ? tokenMax : pmax(expr));
+			default:
+				if(expr == null && type == null)
+					error(ECustom("Property requires type-hint or initialization"), p1, tokenMax);
+		}
+	}
+
 	// ------------------------ module -------------------------------
 
 	public function parseModule( content : String, ?origin : String = "hscript" ):Array<ModuleDecl> {
@@ -1812,15 +1837,19 @@ class Parser {
 					var name = getIdent();
 					var get = ADefault, set = ADefault;
 					var hasGetSet:Bool = false;
-					// TODO: throw "Missing ;" if tried to use (get, set) on final
-					if(maybe(TPOpen) && id != "final") {
+
+					if(maybe(TPOpen)) {
+						if(id == "final") 
+							unexpected(TPOpen);
+
 						var getId = getIdent();
 						switch(getId) {
 							case 'default': // Do nothing
 							case 'get': get = AGet;
 							case 'null': get = ANull;
+							case 'dynamic': get = ADynamic;
 							case 'never': get = ANever;
-							default: unexpected(TId(getId));
+							default: error(ECustom("Custom property accessor is not supported"), tokenMin, tokenMax);
 						}
 						ensure(TComma);
 						var setId = getIdent();
@@ -1828,17 +1857,18 @@ class Parser {
 							case 'default': // Do nothing
 							case 'set': set = ASet;
 							case 'null': set = ANull;
+							case 'dynamic': set = ADynamic;
 							case 'never': set = ANever;
-							default: unexpected(TId(getId));
+							default: error(ECustom("Custom property accessor is not supported"), tokenMin, tokenMax);
 						}
 						ensure(TPClose);
 						hasGetSet = true;
 					}
-					var type = maybe(TDoubleDot) ? parseType() : null;
-					var expr = maybe(TOp("=")) ? parseExpr() : null;
+					var type:Null<CType> = maybe(TDoubleDot) ? parseType() : null;
+					var expr:Null<Expr> = maybe(TOp("=")) ? parseExpr() : null;
 
-					if(hasGetSet && (expr == null || type == null))
-						error(ECustom("Property requires type-hint or initialization"), p1, tokenMax);
+					if(hasGetSet)
+						checkAccess(get, set, expr, type);
 
 					if( expr != null ) {
 						if( isBlock(expr) )

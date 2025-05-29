@@ -3,7 +3,7 @@ hscript-improved
 
 How to install
 ```
-haxelib git hscript-improved https://github.com/FNF-CNE-Devs/hscript-improved.git
+haxelib git hscript-improved https://github.com/CodenameCrew/hscript-improved.git
 ```
 
 To enable custom classes support you have to do this in project.xml

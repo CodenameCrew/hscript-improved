@@ -908,6 +908,7 @@ class Interp {
 						getter: getter,
 						setter: setter,
 						isVar: isVar,
+						isStatic: isStatic,
 						interp: this,
 					}
 				}

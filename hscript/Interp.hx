@@ -1428,7 +1428,7 @@ class Interp {
 		if (o == null)
 			error(EInvalidAccess(f));
 
-		var cls = Type.getClass(o);
+		var cls:Null<Class<Dynamic>> = useRedirects ? Type.getClass(o) : null;
 		if (useRedirects && {
 			var cl:Null<String> = getClassType(o, cls);
 			cl != null && getRedirects.exists(cl) && (_getRedirect = getRedirects[cl]) != null;
@@ -1451,9 +1451,9 @@ class Interp {
 			var obj:IHScriptCustomBehaviour = cast o;
 			return obj.hget(f);
 		}
-		var v = null;
+		var v:Null<Dynamic> = null;
 		if(isBypassAccessor) {
-			if ((v = UnsafeReflect.field(o, f)) == null)
+			if ((v = UnsafeReflect.field(o, f)) == null && useRedirects)
 				v = Reflect.field(cls, f);
 		}
 
@@ -1461,15 +1461,15 @@ class Interp {
 			#if php
 			// https://github.com/HaxeFoundation/haxe/issues/4915
 			try {
-				if ((v = UnsafeReflect.getProperty(o, f)) == null)
+				if ((v = UnsafeReflect.getProperty(o, f)) == null && useRedirects)
 					v = Reflect.getProperty(cls, f);
 			}
 			catch(e:Dynamic) {
-				if ((v = UnsafeReflect.field(o, f)) == null)
+				if ((v = UnsafeReflect.field(o, f)) == null && useRedirects)
 					v = Reflect.field(cls, f);
 			}
 			#else
-			if ((v = UnsafeReflect.getProperty(o, f)) == null)
+			if ((v = UnsafeReflect.getProperty(o, f)) == null && useRedirects)
 				v = Reflect.getProperty(cls, f);
 			#end
 		}

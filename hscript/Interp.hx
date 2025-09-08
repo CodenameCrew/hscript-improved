@@ -122,7 +122,7 @@ class Interp {
 		return inCustomClass ? cast scriptObject : null;
 
 	public var errorHandler:Error->Void;
-	public var importFailedCallback:Array<String>->Bool;
+	public var importFailedCallback:Array<String>->Null<String>->Bool;
 
 	public var customClasses:Map<String, CustomClassHandler>;
 	public var variables:Map<String, Dynamic>;
@@ -1637,4 +1637,5 @@ class Interp {
 			return Type.createInstance(c, args);
 	}
 }
+
 

@@ -143,6 +143,7 @@ class Interp {
 	var beforeAlias:Null<String> = null;
 
 	public var importEnabled:Bool = true;
+	public var allowStaticImports:Bool = true;
 
 	public var allowStaticVariables:Bool = false;
 	public var allowPublicVariables:Bool = false;
@@ -725,20 +726,20 @@ class Interp {
 					beforeAlias = null;
 					setAlias = null;
 				}
-			case EImport(c, n, isUsing):
-				if (!importEnabled)
-					return null;
-				var splitClassName = [for (e in c.split(".")) e.trim()];
+			case EImport(clsName, aliasAs, isUsing):
+				if(!importEnabled) return null;
+
+				var splitClassName = [for (e in clsName.split(".")) e.trim()];
 				var realClassName = splitClassName.join(".");
 				var claVarName = splitClassName[splitClassName.length - 1];
-				var toSetName = n != null ? n : claVarName;
+				var toSetName = aliasAs != null ? aliasAs : claVarName;
 				var oldClassName = realClassName;
 				var oldSplitName = splitClassName.copy();
 
-				if (variables.exists(toSetName)) { // class is already imported 
+				if(variables.exists(toSetName)) { // class is already imported 
 					if(isUsing && !usingHandler.entryExists(toSetName))
 						setUsing(toSetName, variables.get(toSetName)); 
-					
+
 					return null;
 				}
 
@@ -748,56 +749,67 @@ class Interp {
 					// setting the extension
 					if(isUsing && !usingHandler.entryExists(toSetName))
 						setCustomClassUsing(toSetName, customClasses.get(toSetName));
+
 					return null;
 				}
+				
+				function importResolve(__clsName:String):Null<Dynamic> {
+					var _realClassName = getLocalImportRedirect(__clsName);
+					if(importBlocklist.contains(_realClassName)) return null;
 
-				var realClassName = getLocalImportRedirect(realClassName);
+					var _cl = Type.resolveClass(_realClassName);
+					if(_cl == null) _cl = Type.resolveClass('${_realClassName}_HSC');
+					return _cl;
+				}
 
-				if (importBlocklist.contains(realClassName))
-					return null;
-				var cl = Type.resolveClass(realClassName);
-				if (cl == null)
-					cl = Type.resolveClass('${realClassName}_HSC');
-
+				var cl = importResolve(realClassName);
 				var en = Type.resolveEnum(realClassName);
-
 				//trace(realClassName, cl, en, splitClassName);
 
 				// Allow for flixel.ui.FlxBar.FlxBarFillDirection;
-				if (cl == null && en == null) {
+				if(cl == null && en == null) {
 					if(splitClassName.length > 1) {
 						splitClassName.splice(-2, 1); // Remove the last last item
 						realClassName = splitClassName.join(".");
 
-						var realClassName = getLocalImportRedirect(realClassName);
-
-						if (importBlocklist.contains(realClassName))
-							return null;
-
-						cl = Type.resolveClass(realClassName);
-						if (cl == null)
-							cl = Type.resolveClass('${realClassName}_HSC');
-
+						cl = importResolve(realClassName);
 						en = Type.resolveEnum(realClassName);
-
 						//trace(realClassName, cl, en, splitClassName);
 					}
 				}
 
-				if (cl == null && en == null) {
+				if(cl == null && en == null) {
+					if(allowStaticImports) { //allows for static imports like "haxe.io.Path.normalize"
+						var clPth = oldSplitName.copy();
+						var funcName = clPth.pop();
+						var statField = Reflect.getProperty(Type.resolveClass(StringTools.trim(clPth.join("."))), funcName);
+
+						if(statField != null) {
+							variables.set((toSetName != null && toSetName.length > 0 ? toSetName : funcName), statField);
+							return null;
+						}
+					}
+
 					beforeAlias = claVarName;
-					setAlias = n;
-					if (importFailedCallback == null || !importFailedCallback(oldSplitName)){
+					setAlias = aliasAs;
+					if(importFailedCallback == null || !importFailedCallback(oldSplitName, toSetName)){
 						beforeAlias = null;
 						setAlias = null;
 						error(EInvalidClass(oldClassName));
-					}	
+					}
 				} else {
-					if (en != null) {
+					//If the first letter of the alias is not an uppercase letter, then throw an error.
+					//We don't need to worry about this for static imports.
+					if(toSetName != claVarName && toSetName.charAt(0) != toSetName.charAt(0).toUpperCase()) {
+						error(ECustom("Type aliases must start with an uppercase letter"));
+						return null;
+					}
+
+					if(en != null) { // ENUM!!!!
 						if(isUsing) error(EInvalidClass(oldClassName));
-						// ENUM!!!!
+
 						var enumThingy:HEnum = {};
-						for (c in en.getConstructors()) {
+						for(c in en.getConstructors()) {
 							try {
 								//UnsafeReflect.setField(enumThingy, c, en.createByName(c));
 								enumThingy.setEnum(c, en.createByName(c));
@@ -811,12 +823,11 @@ class Interp {
 							}
 						}
 						variables.set(toSetName, enumThingy);
-					} else {
+					} else { //Standard class
 						if(isUsing) setUsing(toSetName, cl);
 						variables.set(toSetName, cl);
 					}
 				}
-
 				return null;
 
 			case EEnum(en, _): // TODO: enum abstracts
@@ -1626,3 +1637,4 @@ class Interp {
 			return Type.createInstance(c, args);
 	}
 }
+

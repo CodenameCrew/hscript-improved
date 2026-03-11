@@ -845,70 +845,81 @@ class Interp {
 				}
 				return null;
 
-			case EEnum(en, _): // TODO: enum abstracts
-				var enumThingy:HEnum = {};
-				var enumName = en.name;
-				var enumFields = en.fields;
-				for (i => ef in enumFields) {
-					var fieldName = ef.name;
-					
-					if(ef.args.length < 1) {
-						var enumValue:HEnumValue = {
-							enumName: enumName,
-							fieldName: fieldName,
-							index: i,
-							args: []
-						}
-
-						enumThingy.setEnum(fieldName, enumValue);
+			case EEnum(en, isAbstract):
+				if(isAbstract) {
+					var enumObj:Dynamic = {};
+					var enumName = en.name;
+					var enumFields = en.fields;
+					for (i => ef in enumFields) {
+						var fieldName = ef.name;
+						var fieldValue = ef.value != null ? exprReturn(ef.value) : i;
+						UnsafeReflect.setField(enumObj, fieldName, fieldValue);
 					}
-					else {
-						var params = ef.args;
-						var hasOpt = false, minParams = 0;
-						for (p in params) {
-							if (p.opt)
-								hasOpt = true;
-							else
-								minParams++;
-						}
-							
-						var f = function(args:Array<Dynamic>):HEnumValue {
-							if (((args == null) ? 0 : args.length) != params.length) {
-								if (args.length < minParams) {
-									var str = "Invalid number of parameters. Got " + args.length + ", required " + minParams;
-									if (enumName != null)
-										str += " for enum '" + enumName + "'";
-									error(ECustom(str));
-								}
-								// make sure mandatory args are forced
-								var args2 = [];
-								var extraParams = args.length - minParams;
-								var pos = 0;
-								for (p in params)
-									if (p.opt) {
-										if (extraParams > 0) {
-											args2.push(args[pos++]);
-											extraParams--;
-										} else
-											args2.push(null);
-									} else
-										args2.push(args[pos++]);
-								args = args2;
-							}
-							return {
+					variables.set(enumName, enumObj);
+				} else {
+					var enumThingy:HEnum = {};
+					var enumName = en.name;
+					var enumFields = en.fields;
+					for (i => ef in enumFields) {
+						var fieldName = ef.name;
+						
+						if(ef.args.length < 1) {
+							var enumValue:HEnumValue = {
 								enumName: enumName,
 								fieldName: fieldName,
 								index: i,
-								args: args
+								args: []
+							}
+
+							enumThingy.setEnum(fieldName, enumValue);
+						}
+						else {
+							var params = ef.args;
+							var hasOpt = false, minParams = 0;
+							for (p in params) {
+								if (p.opt)
+									hasOpt = true;
+								else
+									minParams++;
+							}
+								
+							var f = function(args:Array<Dynamic>):HEnumValue {
+								if (((args == null) ? 0 : args.length) != params.length) {
+									if (args.length < minParams) {
+										var str = "Invalid number of parameters. Got " + args.length + ", required " + minParams;
+										if (enumName != null)
+											str += " for enum '" + enumName + "'";
+										error(ECustom(str));
+									}
+									var args2 = [];
+									var extraParams = args.length - minParams;
+									var pos = 0;
+									for (p in params)
+										if (p.opt) {
+											if (extraParams > 0) {
+												args2.push(args[pos++]);
+												extraParams--;
+											} else
+												args2.push(null);
+										} else
+											args2.push(args[pos++]);
+									args = args2;
+								}
+								return {
+									enumName: enumName,
+									fieldName: fieldName,
+									index: i,
+									args: args
+								};
 							};
-						};
-						var f = Reflect.makeVarArgs(f);
+							var f = Reflect.makeVarArgs(f);
 
-						enumThingy.setEnum(fieldName, f);
+							enumThingy.setEnum(fieldName, f);
+						}
 					}
-				}
 
-				variables.set(en.name, enumThingy);
+					variables.set(en.name, enumThingy);
+				}
 			case ERegex(e, f):
 				return new EReg(e, f);
 			case EConst(c):

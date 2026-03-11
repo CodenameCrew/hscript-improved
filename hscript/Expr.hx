@@ -119,12 +119,14 @@ typedef Metadata = Array<MetadataEntry>;
 final class EnumDecl {
 	public var name : String;
 	public var fields : Array<EnumField>;
+	public var underlyingType : Null<CType>;
 }
 
 @:structInit
 final class EnumField {
 	public var name : String;
 	public var args : Array<Argument>;
+	public var value : Null<Expr>;
 }
 
 enum CType {

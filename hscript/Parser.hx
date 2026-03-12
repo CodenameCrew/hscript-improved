@@ -1124,8 +1124,15 @@ class Parser {
 			
 			if(isAbstract) {
 				ensure(TPOpen);
-				underlyingType = parseType();
-				ensure(TPClose);
+				if(allowTypes) {
+					underlyingType = parseType();
+					ensure(TPClose);
+				} else {
+					var t = token();
+					while(t != TPClose && t != TEof) {
+						t = token();
+					}
+				}
 			}
 
 			ensure(TBrOpen);

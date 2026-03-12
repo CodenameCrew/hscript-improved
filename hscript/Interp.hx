@@ -687,6 +687,10 @@ class Interp {
 				return UnsafeReflect.getProperty(scriptObject, 'get_$id')();
 			}
 		}
+		var cl = Type.resolveClass(id);
+		if(cl != null) return cl;
+		var en = Type.resolveEnum(id);
+		if(en != null) return en;
 		if (doException)
 			error(EUnknownVariable(id));
 		return null;
@@ -975,9 +979,33 @@ class Interp {
 				restore(old);
 				return v;
 			case EField(e, f, s):
-				var field:Null<Dynamic> = expr(e);
-				if(s && field == null)
-					return null;
+				var field:Null<Dynamic>;
+				try {
+					field = expr(e);
+				} catch(exc:Dynamic) {
+					var path = getExprPath(e);
+					if(path != null) {
+						var fullPath = path + "." + f;
+						var cl = Type.resolveClass(fullPath);
+						if(cl != null) return cl;
+						var en = Type.resolveEnum(fullPath);
+						if(en != null) return en;
+						if(s) return null;
+						error(EUnknownVariable(path));
+					}
+					throw exc;
+				}
+				if(field == null) {
+					var path = getExprPath(e);
+					if(path != null) {
+						var fullPath = path + "." + f;
+						var cl = Type.resolveClass(fullPath);
+						if(cl != null) return cl;
+						var en = Type.resolveEnum(fullPath);
+						if(en != null) return en;
+					}
+					if(s) return null;
+				}
 				return get(field, f);
 			case EBinop(op, e1, e2):
 				var fop = binops.get(op);
@@ -1456,6 +1484,20 @@ class Interp {
 					cls = Type.getClass(o);
 				cls != null ? Type.getClassName(cls) : null;
 		};
+	}
+
+	function getExprPath(e:Expr):Null<String> {
+		switch(Tools.expr(e)) {
+			case EIdent(id):
+				return id;
+			case EField(e2, f, _):
+				var parent = getExprPath(e2);
+				if(parent != null)
+					return parent + "." + f;
+				return null;
+			default:
+				return null;
+		}
 	}
 
 	function get(o:Dynamic, f:String):Dynamic {

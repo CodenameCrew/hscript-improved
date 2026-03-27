@@ -20,6 +20,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 package hscript;
+
+import haxe.ds.StringMap;
 import hscript.Expr;
 
 using StringTools;
@@ -60,13 +62,13 @@ class Parser {
 	public var line : Int;
 	public var opChars : String;
 	public var identChars : String;
-	public var opPriority : Map<String,Int>;
-	public var opRightAssoc : Map<String,Bool>;
+	public var opPriority : StringMap<Int>;
+	public var opRightAssoc : StringMap<Bool>;
 
 	/**
 		allows to check for #if / #else in code
 	**/
-	public var preprocessorValues : Map<String,Dynamic> = new Map();
+	public var preprocessorValues : StringMap<Dynamic> = new StringMap();
 
 	/**
 		activate JSON compatiblity
@@ -141,8 +143,8 @@ class Parser {
 			["->", "??"],
 			["is"]
 		];
-		opPriority = new Map();
-		opRightAssoc = new Map();
+		opPriority = new StringMap();
+		opRightAssoc = new StringMap();
 		#if (haxe >= "4.0.0")
 		for(i => p in priorities) 
 			for(x in p) {
@@ -849,6 +851,7 @@ class Parser {
 					null;
 			}
 		case "var" | "final":
+			var isFinalVar:Bool = false;
 			if(id == "final") {
 				var nextToken = token();
 				switch(nextToken) {
@@ -864,6 +867,7 @@ class Parser {
 						return str;
 					default:
 						push(nextToken);
+						isFinalVar = true;
 				}
 			}
 			var ident = getIdent();
@@ -874,7 +878,7 @@ class Parser {
 
 			var tk = token();
 			if( tk == TPOpen) {
-				if( id == "final" )
+				if( isFinalVar )
 					unexpected(tk);
 
 				var getId = getIdent();
@@ -922,7 +926,7 @@ class Parser {
 
 			nextType = null;
 			if(isVar) isVar = false;
-			mk(EVar(ident, t, e, nextIsPublic, nextIsStatic, nextIsPrivate, id == "final", nextIsInline, get, set, oldIsVar), p1, (e == null) ? tokenMax : pmax(e));
+			mk(EVar(ident, t, e, nextIsPublic, nextIsStatic, nextIsPrivate, isFinalVar, nextIsInline, get, set, oldIsVar), p1, (e == null) ? tokenMax : pmax(e));
 		case "while":
 			var econd = parseExpr();
 			var e = parseExpr();

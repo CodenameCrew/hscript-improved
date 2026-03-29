@@ -55,6 +55,20 @@ enum abstract ScriptObjectType(UInt8) {
 	var SNull;
 }
 
+enum abstract VarLocation(UInt8) {
+	var VGlobal;
+	var VPublic;
+	var VStatic;
+	var VScriptObject;
+	var VScriptObjectGetter;
+	var VCustomClass;
+	var VCustomClassBypass;
+	var VBehaviourClass;
+	var VAccessBehaviour;
+	var VAccessBehaviourBypass;
+	var VNotFound;
+}
+
 @:structInit
 class DeclaredVar {
 	public var r:Dynamic;
@@ -153,6 +167,9 @@ class Interp {
 	];
 
 	var usingHandler:UsingHandler;
+
+	var varLocationCache:Map<String, VarLocation> = new Map();
+	var cacheValid:Bool = true;
 
 	#if hscriptPos
 	var curExpr:Expr;
@@ -312,6 +329,7 @@ class Interp {
 						} else if (__instanceFields.contains('set_$id')) { // setter
 							return UnsafeReflect.getProperty(scriptObject, 'set_$id')(v);
 						} else {
+							varLocationCache.remove(id);
 							setVar(id, v);
 						}
 					} else {
@@ -320,6 +338,7 @@ class Interp {
 							var prop:Property = cast obj;
 							return prop.callSetter(id, v);
 						}
+						varLocationCache.remove(id);
 						setVar(id, v);
 					}
 				} else if (l.r is Property) {
@@ -328,6 +347,7 @@ class Interp {
 				} else {
 					l.r = v;
 					if (l.depth == 0) {
+						varLocationCache.remove(id);
 						setVar(id, v);
 					}
 				}
@@ -395,6 +415,7 @@ class Interp {
 						} else if (__instanceFields.contains('set_$id')) { // setter
 							return UnsafeReflect.getProperty(scriptObject, 'set_$id')(v);
 						} else {
+							varLocationCache.remove(id);
 							setVar(id, v);
 						}
 					} else {
@@ -403,6 +424,7 @@ class Interp {
 							var prop:Property = cast obj;
 							return prop.callSetter(id, v);
 						}
+						varLocationCache.remove(id);
 						setVar(id, v);
 					}
 				}
@@ -414,6 +436,7 @@ class Interp {
 					}
 					l.r = v;
 					if (l.depth == 0) {
+						varLocationCache.remove(id);
 						setVar(id, v);
 					}
 				}
@@ -468,6 +491,7 @@ class Interp {
 						else
 							l.r = v + delta;
 					}
+					if (l.depth == 0) varLocationCache.remove(id);
 					return v;
 				} else {
 					var v:Dynamic = resolve(id, true, false);
@@ -481,13 +505,17 @@ class Interp {
 						v += delta;
 						if (prop != null)
 							prop.callSetter(id, v);
-						else
+						else {
+							varLocationCache.remove(id);
 							setVar(id, v);
+						}
 					} else {
 						if (prop != null)
 							prop.callSetter(id, v + delta);
-						else
+						else {
+							varLocationCache.remove(id);
 							setVar(id, v + delta);
+						}
 					}
 					return v;
 				}
@@ -644,12 +672,53 @@ class Interp {
 			}
 		}
 
-		if (variables.exists(id))
+		if(cacheValid) {
+			var loc = varLocationCache.get(id);
+			if(loc != null) {
+				return switch(loc) {
+					case VGlobal: getProperty(variables.get(id), id, allowProperty);
+					case VPublic: getProperty(publicVariables.get(id), id, allowProperty);
+					case VStatic: getProperty(staticVariables.get(id), id, allowProperty);
+					case VScriptObject: isBypassAccessor ? UnsafeReflect.field(scriptObject, id) : UnsafeReflect.getProperty(scriptObject, id);
+					case VScriptObjectGetter: UnsafeReflect.getProperty(scriptObject, 'get_$id')();
+					case VCustomClass: (cast scriptObject:IHScriptCustomAccessBehaviour).hget(id);
+					case VCustomClassBypass:
+						var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
+						obj.__allowSetGet = false;
+						var res = obj.hget(id);
+						obj.__allowSetGet = true;
+						res;
+					case VBehaviourClass: (cast scriptObject:IHScriptCustomBehaviour).hget(id);
+					case VAccessBehaviour: (cast scriptObject:IHScriptCustomAccessBehaviour).hget(id);
+					case VAccessBehaviourBypass:
+						var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
+						obj.__allowSetGet = false;
+						var res = obj.hget(id);
+						obj.__allowSetGet = true;
+						res;
+					case VNotFound:
+						var cl = Type.resolveClass(id);
+						if(cl != null) return cl;
+						var en = Type.resolveEnum(id);
+						if(en != null) return en;
+						if (doException) error(EUnknownVariable(id));
+						null;
+				}
+			}
+		}
+
+		if (variables.exists(id)) {
+			varLocationCache.set(id, VGlobal);
 			return getProperty(variables.get(id), id, allowProperty);
-		if (publicVariables.exists(id))
+		}
+		if (publicVariables.exists(id)) {
+			varLocationCache.set(id, VPublic);
 			return getProperty(publicVariables.get(id), id, allowProperty);
-		if (staticVariables.exists(id))
+		}
+		if (staticVariables.exists(id)) {
+			varLocationCache.set(id, VStatic);
 			return getProperty(staticVariables.get(id), id, allowProperty);
+		}
 
 		if(customClasses.exists(id))
 			return customClasses.get(id);
@@ -662,31 +731,39 @@ class Interp {
 			var instanceHasField = __instanceFields.contains(id);
 
 			if (_scriptObjectType == SObject && instanceHasField) {
+				varLocationCache.set(id, VScriptObject);
 				return UnsafeReflect.field(scriptObject, id);
 			} else if((_scriptObjectType == SCustomClass && instanceHasField) || _scriptObjectType == SAccessBehaviourObject) {
 				var obj:IHScriptCustomAccessBehaviour = cast scriptObject;
 				if(isBypassAccessor) {
+					varLocationCache.set(id, VCustomClassBypass);
 					obj.__allowSetGet = false;
 					var res = obj.hget(id);
 					obj.__allowSetGet = true;
 					return res;
 				}
+				varLocationCache.set(id, VCustomClass);
 				return obj.hget(id);
 			} else if(_scriptObjectType == SBehaviourClass) {
+				varLocationCache.set(id, VBehaviourClass);
 				var obj:IHScriptCustomBehaviour = cast scriptObject;
 				return obj.hget(id);
 			}
 
 			if (instanceHasField) {
 				if(isBypassAccessor) {
+					varLocationCache.set(id, VScriptObject);
 					return UnsafeReflect.field(scriptObject, id);
 				} else {
+					varLocationCache.set(id, VScriptObject);
 					return UnsafeReflect.getProperty(scriptObject, id);
 				}
 			} else if (__instanceFields.contains('get_$id')) { // getter
 				return UnsafeReflect.getProperty(scriptObject, 'get_$id')();
 			}
 		}
+		
+		varLocationCache.set(id, VNotFound);
 		var cl = Type.resolveClass(id);
 		if(cl != null) return cl;
 		var en = Type.resolveEnum(id);
@@ -694,6 +771,15 @@ class Interp {
 		if (doException)
 			error(EUnknownVariable(id));
 		return null;
+	}
+
+	public function invalidateCache():Void {
+		varLocationCache = new Map();
+		cacheValid = true;
+	}
+
+	public function setCacheValid(valid:Bool):Void {
+		cacheValid = valid;
 	}
 
 	public static var importRedirects:Map<String, String> = new Map();
@@ -982,6 +1068,7 @@ class Interp {
 				};
 				locals.set(n, declVar);
 				if (depth == 0) {
+					varLocationCache.remove(n);
 					if(allowStaticVariables && isStatic == true) {
 						if(!staticVariables.exists(n)) // make it so it only sets it once
 							staticVariables.set(n, locals[n].r);

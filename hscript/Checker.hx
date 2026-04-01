@@ -1113,11 +1113,11 @@ class Checker {
 			return TVoid;
 		case EBinop(op, e1, e2):
 			switch( op ) {
-			case "&", "|", "^", ">>", ">>>", "<<":
+			case OpAnd, OpOr, OpXor, OpShr, OpUshr, OpShl:
 				typeExprWith(e1,TInt);
 				typeExprWith(e2,TInt);
 				return TInt;
-			case "=":
+			case OpAssign:
 				if( allowDefine ) {
 					switch( edef(e1) ) {
 					case EIdent(i) if( !locals.exists(i) && !globals.exists(i) ):
@@ -1133,7 +1133,7 @@ class Checker {
 				}
 				typeExprWith(e2,vt);
 				return vt;
-			case "+":
+			case OpAdd:
 				var t1 = typeExpr(e1,WithType(TInt));
 				var t2 = typeExpr(e2,WithType(t1));
 				tryUnify(t1,t2);
@@ -1150,14 +1150,14 @@ class Checker {
 					unify(t1, TFloat, e1);
 					unify(t2, TFloat, e2);
 				}
-			case "-", "*", "/", "%":
+			case OpSub, OpMult, OpDiv, OpMod:
 				var t1 = typeExpr(e1,WithType(TInt));
 				var t2 = typeExpr(e2,WithType(t1));
 				if( !tryUnify(t1,t2) )
 					unify(t2,t1,e2);
 				switch( [follow(t1), follow(t2)]) {
 				case [TInt, TInt]:
-					if( op == "/" ) return TFloat;
+					if( op == OpDiv ) return TFloat;
 					return TInt;
 				case [TFloat|TDynamic, TInt|TDynamic], [TInt|TDynamic, TFloat|TDynamic], [TFloat, TFloat]:
 					return TFloat;
@@ -1165,21 +1165,21 @@ class Checker {
 					unify(t1, TFloat, e1);
 					unify(t2, TFloat, e2);
 				}
-			case "&&", "||":
+			case OpBoolAnd, OpBoolOr:
 				typeExprWith(e1,TBool);
 				typeExprWith(e2,TBool);
 				return TBool;
-			case "...":
+			case OpInterval:
 				typeExprWith(e1,TInt);
 				typeExprWith(e2,TInt);
 				return makeIterator(TInt);
-			case "==", "!=":
+			case OpEq, OpNeq:
 				var t1 = typeExpr(e1,Value);
 				var t2 = typeExpr(e2,WithType(t1));
 				if( !tryUnify(t1,t2) )
 					unify(t2,t1,e2);
 				return TBool;
-			case ">", "<", ">=", "<=":
+			case OpGt, OpLt, OpGte, OpLte:
 				var t1 = typeExpr(e1,Value);
 				var t2 = typeExpr(e2,WithType(t1));
 				if( !tryUnify(t1,t2) )
@@ -1190,12 +1190,26 @@ class Checker {
 					error("Cannot compare "+typeStr(t1), expr);
 				}
 				return TBool;
+			case OpAddAssign, OpSubAssign, OpMultAssign, OpDivAssign, OpModAssign, OpAndAssign, OpOrAssign, OpXorAssign, OpShlAssign, OpShrAssign, OpUshrAssign, OpNcoalAssign:
+				var baseOp = switch(op) {
+					case OpAddAssign: OpAdd;
+					case OpSubAssign: OpSub;
+					case OpMultAssign: OpMult;
+					case OpDivAssign: OpDiv;
+					case OpModAssign: OpMod;
+					case OpAndAssign: OpAnd;
+					case OpOrAssign: OpOr;
+					case OpXorAssign: OpXor;
+					case OpShlAssign: OpShl;
+					case OpShrAssign: OpShr;
+					case OpUshrAssign: OpUshr;
+					case OpNcoalAssign: OpNcoal;
+					default: op;
+				};
+				var t = typeExpr(mk(EBinop(baseOp,e1,e2),expr),withType);
+				return typeExpr(mk(EBinop(OpAssign,e1,e2),expr), withType);
 			default:
-				if( op.charCodeAt(op.length-1) == "=".code ) {
-					var t = typeExpr(mk(EBinop(op.substr(0,op.length-1),e1,e2),expr),withType);
-					return typeExpr(mk(EBinop("=",e1,e2),expr), withType);
-				}
-				error("Unsupported operation "+op, expr);
+				error("Unsupported operation "+op.toString(), expr);
 			}
 		case ETry(etry, v, et, ecatch):
 			var vt = typeExpr(etry, withType);

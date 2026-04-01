@@ -55,7 +55,7 @@ class Async {
 		- object access such obj.bar(a,b,c) are translated to obj.a_bar(function(r) ...rest, a, b, c)
 		- @async expr will execute the expression but continue without waiting for it to finish
 		- @split [ e1, e2, e3 ] is transformed to split(function(_) ...rest, [e1, e2, e3]) which
-		  should execute asynchronously all expressions - until they return - before continuing the execution
+			should execute asynchronously all expressions - until they return - before continuing the execution
 		- for(i in v) block; loops are translated to the following:
 			var _i = makeIterator(v);
 			function _loop() {
@@ -170,7 +170,7 @@ class Async {
 		return mk(EField(e, f), inf);
 	}
 
-	inline function binop(op, e1, e2, inf) {
+	inline function binop(op:Binop, e1, e2, inf) {
 		return mk(EBinop(op, e1, e2), inf);
 	}
 
@@ -307,7 +307,7 @@ class Async {
 			return toCps(eop, fun("_r",call(rest, [mk(EUnop(op, prefix, ident("_r",e)),e)], e)), exit);
 		case EBinop(op, e1, e2):
 			switch( op ) {
-			case "=", "+=", "-=", "/=", "*=", "%=", "&=", "|=", "^=":
+			case OpAssign, OpAddAssign, OpSubAssign, OpDivAssign, OpMultAssign, OpModAssign, OpAndAssign, OpOrAssign, OpXorAssign:
 				switch( expr(e1) ) {
 				case EIdent(_):
 					var id = "_r" + uid++;
@@ -326,14 +326,14 @@ class Async {
 				default:
 					throw "assert " + e1;
 				}
-			case "||":
+			case OpBoolOr:
 				var id1 = "_r" + uid++;
 				var id2 = "_r" + uid++;
-				return toCps(e1, fun(id1, mk(EIf(binop("==", ident(id1,e1), ident("true",e1), e1),call(rest,[ident("true",e1)],e1),toCps(e2, rest, exit)),e)), exit);
-			case "&&":
+				return toCps(e1, fun(id1, mk(EIf(binop(OpEq, ident(id1,e1), ident("true",e1), e1),call(rest,[ident("true",e1)],e1),toCps(e2, rest, exit)),e)), exit);
+			case OpBoolAnd:
 				var id1 = "_r" + uid++;
 				var id2 = "_r" + uid++;
-				return toCps(e1, fun(id1, mk(EIf(binop("!=", ident(id1,e1), ident("true",e1), e1),call(rest,[ident("false",e1)],e1),toCps(e2, rest, exit)),e)), exit);
+				return toCps(e1, fun(id1, mk(EIf(binop(OpNeq, ident(id1,e1), ident("true",e1), e1),call(rest,[ident("false",e1)],e1),toCps(e2, rest, exit)),e)), exit);
 			default:
 				var id1 = "_r" + uid++;
 				var id2 = "_r" + uid++;
@@ -364,7 +364,7 @@ class Async {
 			fields.reverse();
 			for( f in fields )
 				rest = toCps(f.e, fun("_r", block([
-					binop("=", mk(EField(ident(id,f.e), f.name),f.e), ident("_r",f.e), f.e),
+					binop(OpAssign, mk(EField(ident(id,f.e), f.name),f.e), ident("_r",f.e), f.e),
 					rest,
 				],f.e)),exit);
 			return block([
@@ -378,7 +378,7 @@ class Async {
 			while( i >= 0 ) {
 				var e = el[i];
 				rest = toCps(e, fun("_r", block([
-					binop("=", mk(EArray(ident(id,e), mk(EConst(CInt(i)),e)),e), ident("_r",e), e),
+					binop(OpAssign, mk(EArray(ident(id,e), mk(EConst(CInt(i)),e)),e), ident("_r",e), e),
 					rest,
 				],e)), exit);
 				i--;
@@ -396,7 +396,7 @@ class Async {
 				return block([e, retNull(rest, e)], e);
 			return block([
 				mk(EVar(v, t),e),
-				toCps(ev, fun("_r", block([binop("=", ident(v,e), ident("_r",e), e), retNull(rest,e)], e)), exit),
+				toCps(ev, fun("_r", block([binop(OpAssign, ident(v,e), ident("_r",e), e), retNull(rest,e)], e)), exit),
 			],e);
 		case EConst(_), EIdent(_), EUnop(_), EField(_):
 			return call(rest, [e], e);

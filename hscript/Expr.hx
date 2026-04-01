@@ -28,6 +28,132 @@ typedef Int64 = #if cpp cpp.Int64 #elseif java java.Int64 #elseif cs cs.Int64 #e
 
 typedef UInt8 = #if cpp cpp.UInt8 #elseif cs cs.UInt8 #else Int #end;
 typedef UInt16 = #if cpp cpp.UInt16 #elseif cs cs.UInt16 #else Int #end;
+
+enum abstract Binop(Int) from Int to Int {
+	var OpAdd = 0;
+	var OpSub = 1;
+	var OpMult = 2;
+	var OpDiv = 3;
+	var OpMod = 4;
+	var OpAnd = 5;
+	var OpOr = 6;
+	var OpXor = 7;
+	var OpShl = 8;
+	var OpShr = 9;
+	var OpUshr = 10;
+	var OpEq = 11;
+	var OpNeq = 12;
+	var OpGte = 13;
+	var OpLte = 14;
+	var OpGt = 15;
+	var OpLt = 16;
+	var OpBoolOr = 17;
+	var OpBoolAnd = 18;
+	var OpIs = 19;
+	var OpAssign = 20;
+	var OpNcoal = 21;
+	var OpInterval = 22;
+	var OpArrow = 23;
+	var OpAddAssign = 24;
+	var OpSubAssign = 25;
+	var OpMultAssign = 26;
+	var OpDivAssign = 27;
+	var OpModAssign = 28;
+	var OpAndAssign = 29;
+	var OpOrAssign = 30;
+	var OpXorAssign = 31;
+	var OpShlAssign = 32;
+	var OpShrAssign = 33;
+	var OpUshrAssign = 34;
+	var OpNcoalAssign = 35;
+	var OpArrowFn = 36;
+
+	public static inline function fromString(s:String):Binop {
+		return switch(s) {
+			case "+": OpAdd;
+			case "-": OpSub;
+			case "*": OpMult;
+			case "/": OpDiv;
+			case "%": OpMod;
+			case "&": OpAnd;
+			case "|": OpOr;
+			case "^": OpXor;
+			case "<<": OpShl;
+			case ">>": OpShr;
+			case ">>>": OpUshr;
+			case "==": OpEq;
+			case "!=": OpNeq;
+			case ">=": OpGte;
+			case "<=": OpLte;
+			case ">": OpGt;
+			case "<": OpLt;
+			case "||": OpBoolOr;
+			case "&&": OpBoolAnd;
+			case "is": OpIs;
+			case "=": OpAssign;
+			case "??": OpNcoal;
+			case "...": OpInterval;
+			case "->": OpArrow;
+			case "=>": OpArrowFn;
+			case "+=": OpAddAssign;
+			case "-=": OpSubAssign;
+			case "*=": OpMultAssign;
+			case "/=": OpDivAssign;
+			case "%=": OpModAssign;
+			case "&=": OpAndAssign;
+			case "|=": OpOrAssign;
+			case "^=": OpXorAssign;
+			case "<<=": OpShlAssign;
+			case ">>=": OpShrAssign;
+			case ">>>=": OpUshrAssign;
+			case "??=": OpNcoalAssign;
+			default: -1;
+		}
+	}
+
+	public inline function toString():String {
+		return switch(this) {
+			case OpAdd: "+";
+			case OpSub: "-";
+			case OpMult: "*";
+			case OpDiv: "/";
+			case OpMod: "%";
+			case OpAnd: "&";
+			case OpOr: "|";
+			case OpXor: "^";
+			case OpShl: "<<";
+			case OpShr: ">>";
+			case OpUshr: ">>>";
+			case OpEq: "==";
+			case OpNeq: "!=";
+			case OpGte: ">=";
+			case OpLte: "<=";
+			case OpGt: ">";
+			case OpLt: "<";
+			case OpBoolOr: "||";
+			case OpBoolAnd: "&&";
+			case OpIs: "is";
+			case OpAssign: "=";
+			case OpNcoal: "??";
+			case OpInterval: "...";
+			case OpArrow: "->";
+			case OpArrowFn: "=>";
+			case OpAddAssign: "+=";
+			case OpSubAssign: "-=";
+			case OpMultAssign: "*=";
+			case OpDivAssign: "/=";
+			case OpModAssign: "%=";
+			case OpAndAssign: "&=";
+			case OpOrAssign: "|=";
+			case OpXorAssign: "^=";
+			case OpShlAssign: "<<=";
+			case OpShrAssign: ">>=";
+			case OpUshrAssign: ">>>=";
+			case OpNcoalAssign: "??=";
+			default: "?";
+		}
+	}
+}
 typedef UInt32 = #if cpp cpp.UInt32 #else Int #end;
 typedef UInt64 = #if cpp cpp.UInt64 #else Int #end;
 
@@ -57,7 +183,7 @@ enum Expr {
 	EParent( e : Expr );
 	EBlock( e : Array<Expr> );
 	EField( e : Expr, f : String , ?safe : Bool );
-	EBinop( op : String, e1 : Expr, e2 : Expr );
+	EBinop( op : Binop, e1 : Expr, e2 : Expr );
 	EUnop( op : String, prefix : Bool, e : Expr );
 	ECall( e : Expr, params : Array<Expr> );
 	EIf( cond : Expr, e1 : Expr, ?e2 : Expr );

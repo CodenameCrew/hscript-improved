@@ -144,7 +144,6 @@ class Interp {
 
 	// warning can be null
 	public var locals:Map<String, DeclaredVar>;
-	var binops:StringMap<Expr->Expr->Dynamic>;
 
 	var depth:Int = 0;
 	var inTry:Bool;
@@ -179,7 +178,6 @@ class Interp {
 		locals = new Map();
 		declared = [];
 		resetVariables();
-		initOps();
 	}
 
 	private function resetVariables():Void {
@@ -208,49 +206,6 @@ class Interp {
 			return cast {fileName: curExpr.origin, lineNumber: curExpr.line};
 		#end
 		return cast {fileName: "hscript", lineNumber: 0};
-	}
-
-	function initOps():Void {
-		var me = this;
-		binops = new StringMap<Expr -> Expr -> Dynamic>();
-		binops.set("+", function(e1, e2) return me.expr(e1) + me.expr(e2));
-		binops.set("-", function(e1, e2) return me.expr(e1) - me.expr(e2));
-		binops.set("*", function(e1, e2) return me.expr(e1) * me.expr(e2));
-		binops.set("/", function(e1, e2) return me.expr(e1) / me.expr(e2));
-		binops.set("%", function(e1, e2) return me.expr(e1) % me.expr(e2));
-		binops.set("&", function(e1, e2) return me.expr(e1) & me.expr(e2));
-		binops.set("|", function(e1, e2) return me.expr(e1) | me.expr(e2));
-		binops.set("^", function(e1, e2) return me.expr(e1) ^ me.expr(e2));
-		binops.set("<<", function(e1, e2) return me.expr(e1) << me.expr(e2));
-		binops.set(">>", function(e1, e2) return me.expr(e1) >> me.expr(e2));
-		binops.set(">>>", function(e1, e2) return me.expr(e1) >>> me.expr(e2));
-		binops.set("==", function(e1, e2) return me.expr(e1) == me.expr(e2));
-		binops.set("!=", function(e1, e2) return me.expr(e1) != me.expr(e2));
-		binops.set(">=", function(e1, e2) return me.expr(e1) >= me.expr(e2));
-		binops.set("<=", function(e1, e2) return me.expr(e1) <= me.expr(e2));
-		binops.set(">", function(e1, e2) return me.expr(e1) > me.expr(e2));
-		binops.set("<", function(e1, e2) return me.expr(e1) < me.expr(e2));
-		binops.set("||", function(e1, e2) return me.expr(e1) == true || me.expr(e2) == true);
-		binops.set("&&", function(e1, e2) return me.expr(e1) == true && me.expr(e2) == true);
-		binops.set("is", checkIsType);
-		binops.set("=", assign);
-		binops.set("??", function(e1, e2) {
-			var expr1:Dynamic = me.expr(e1);
-			return expr1 == null ? me.expr(e2) : expr1;
-		});
-		binops.set("...", function(e1, e2) return new IntIterator(me.expr(e1), me.expr(e2)));
-		assignOp("+=", function(v1:Dynamic, v2:Dynamic) return v1 + v2);
-		assignOp("-=", function(v1:Float, v2:Float) return v1 - v2);
-		assignOp("*=", function(v1:Float, v2:Float) return v1 * v2);
-		assignOp("/=", function(v1:Float, v2:Float) return v1 / v2);
-		assignOp("%=", function(v1:Float, v2:Float) return v1 % v2);
-		assignOp("&=", function(v1, v2) return v1 & v2);
-		assignOp("|=", function(v1, v2) return v1 | v2);
-		assignOp("^=", function(v1, v2) return v1 ^ v2);
-		assignOp("<<=", function(v1, v2) return v1 << v2);
-		assignOp(">>=", function(v1, v2) return v1 >> v2);
-		assignOp(">>>=", function(v1, v2) return v1 >>> v2);
-		assignOp("??" + "=", function(v1, v2) return v1 == null ? v2 : v1);
 	}
 
 	function checkIsType(e1:Expr,e2:Expr): Bool {
@@ -371,12 +326,7 @@ class Interp {
 		return v;
 	}
 
-	function assignOp(op:String, fop:Dynamic->Dynamic->Dynamic):Void {
-		var me = this;
-		binops.set(op, function(e1, e2) return me.evalAssignOp(op, fop, e1, e2));
-	}
-
-	function evalAssignOp(op:String, fop:Dynamic->Dynamic->Dynamic, e1:Expr, e2:Expr):Dynamic {
+	function evalAssignOp(op:Binop, fop:Dynamic->Dynamic->Dynamic, e1:Expr, e2:Expr):Dynamic {
 		var v;
 		switch (Tools.expr(e1)) {
 			case EIdent(id):
@@ -458,7 +408,7 @@ class Interp {
 					arr[index] = v;
 				}
 			default:
-				return error(EInvalidOp(op));
+				return error(EInvalidOp(op.toString()));
 		}
 		return v;
 	}
@@ -1117,10 +1067,47 @@ class Interp {
 				}
 				return get(field, f);
 			case EBinop(op, e1, e2):
-				var fop = binops.get(op);
-				if (fop == null)
-					error(EInvalidOp(op));
-				return fop(e1, e2);
+				return switch(op) {
+					case OpAdd: expr(e1) + expr(e2);
+					case OpSub: expr(e1) - expr(e2);
+					case OpMult: expr(e1) * expr(e2);
+					case OpDiv: expr(e1) / expr(e2);
+					case OpMod: expr(e1) % expr(e2);
+					case OpAnd: expr(e1) & expr(e2);
+					case OpOr: expr(e1) | expr(e2);
+					case OpXor: expr(e1) ^ expr(e2);
+					case OpShl: expr(e1) << expr(e2);
+					case OpShr: expr(e1) >> expr(e2);
+					case OpUshr: expr(e1) >>> expr(e2);
+					case OpEq: expr(e1) == expr(e2);
+					case OpNeq: expr(e1) != expr(e2);
+					case OpGte: expr(e1) >= expr(e2);
+					case OpLte: expr(e1) <= expr(e2);
+					case OpGt: expr(e1) > expr(e2);
+					case OpLt: expr(e1) < expr(e2);
+					case OpBoolOr: expr(e1) == true || expr(e2) == true;
+					case OpBoolAnd: expr(e1) == true && expr(e2) == true;
+					case OpIs: checkIsType(e1, e2);
+					case OpAssign: assign(e1, e2);
+					case OpNcoal:
+						var expr1:Dynamic = expr(e1);
+						expr1 == null ? expr(e2) : expr1;
+					case OpInterval: new IntIterator(expr(e1), expr(e2));
+					case OpArrow: null;
+					case OpAddAssign: evalAssignOp(OpAddAssign, function(v1:Dynamic, v2:Dynamic) return v1 + v2, e1, e2);
+					case OpSubAssign: evalAssignOp(OpSubAssign, function(v1:Float, v2:Float) return v1 - v2, e1, e2);
+					case OpMultAssign: evalAssignOp(OpMultAssign, function(v1:Float, v2:Float) return v1 * v2, e1, e2);
+					case OpDivAssign: evalAssignOp(OpDivAssign, function(v1:Float, v2:Float) return v1 / v2, e1, e2);
+					case OpModAssign: evalAssignOp(OpModAssign, function(v1:Float, v2:Float) return v1 % v2, e1, e2);
+					case OpAndAssign: evalAssignOp(OpAndAssign, function(v1, v2) return v1 & v2, e1, e2);
+					case OpOrAssign: evalAssignOp(OpOrAssign, function(v1, v2) return v1 | v2, e1, e2);
+					case OpXorAssign: evalAssignOp(OpXorAssign, function(v1, v2) return v1 ^ v2, e1, e2);
+					case OpShlAssign: evalAssignOp(OpShlAssign, function(v1, v2) return v1 << v2, e1, e2);
+					case OpShrAssign: evalAssignOp(OpShrAssign, function(v1, v2) return v1 >> v2, e1, e2);
+					case OpUshrAssign: evalAssignOp(OpUshrAssign, function(v1, v2) return v1 >>> v2, e1, e2);
+					case OpNcoalAssign: evalAssignOp(OpNcoalAssign, function(v1, v2) return v1 == null ? v2 : v1, e1, e2);
+					default: error(EInvalidOp(op.toString()));
+				}
 			case EUnop(op, prefix, e):
 				switch (op) {
 					case "!":
@@ -1275,7 +1262,7 @@ class Interp {
 				}
 
 				if (!isMap && arr.length > 0) {
-					isMap = Tools.expr(arr[0]).match(EBinop("=>", _));
+					isMap = Tools.expr(arr[0]).match(EBinop(OpArrowFn, _));
 				}
 
 				// TODO: separate this into a function
@@ -1289,7 +1276,7 @@ class Interp {
 
 					for (e in arr) {
 						switch (Tools.expr(e)) {
-							case EBinop("=>", eKey, eValue):
+							case EBinop(OpArrowFn, eKey, eValue):
 								var key:Dynamic = expr(eKey);
 								var value:Dynamic = expr(eValue);
 								isAllString = isAllString && (key is String);

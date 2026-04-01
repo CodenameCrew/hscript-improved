@@ -156,7 +156,7 @@ class Bytes {
 			doEncode(e);
 			doEncodeString(f);
 		case EBinop(op,e1,e2):
-			doEncodeString(op);
+			doEncodeString(op.toString());
 			doEncode(e1);
 			doEncode(e2);
 		case EUnop(op,prefix,e):
@@ -278,7 +278,7 @@ class Bytes {
 			var e = doDecode();
 			EField(e,doDecodeString());
 		case 6:
-			var op = doDecodeString();
+			var op = Binop.fromString(doDecodeString());
 			var e1 = doDecode();
 			EBinop(op,e1,doDecode());
 		case 7:

@@ -276,7 +276,7 @@ class Printer {
 			add((s == true ? "?." : ".") + f);
 		case EBinop(op, e1, e2):
 			expr(e1);
-			add(" " + op + " ");
+			add(" " + op.toString() + " ");
 			expr(e2);
 		case EUnop(op, pre, e):
 			if( pre ) {

@@ -609,22 +609,23 @@ class Parser {
 	}
 
 	@:analyzer(fusion) inline function makeBinop( op:String, e1:Expr, e:Expr ):Expr {
+ 		var binop = Binop.fromString(op);
 		if( e == null && resumeErrors )
-			return mk(EBinop(op,e1,e),pmin(e1),pmax(e1));
+			return mk(EBinop(binop,e1,e),pmin(e1),pmax(e1));
 		return switch( expr(e) ) {
 		case EBinop(op2,e2,e3):
-			var delta = opPriority.get(op) - opPriority.get(op2);
+			var delta = opPriority.get(op) - opPriority.get(op2.toString());
 			if( delta < 0 || (delta == 0 && !opRightAssoc.exists(op)) )
 				mk(EBinop(op2,makeBinop(op,e1,e2),e3),pmin(e1),pmax(e3));
 			else
-				mk(EBinop(op, e1, e), pmin(e1), pmax(e));
+				mk(EBinop(binop, e1, e), pmin(e1), pmax(e));
 		case ETernary(e2,e3,e4):
 			if( opRightAssoc.exists(op) )
-				mk(EBinop(op,e1,e),pmin(e1),pmax(e));
+				mk(EBinop(binop,e1,e),pmin(e1),pmax(e));
 			else
 				mk(ETernary(makeBinop(op, e1, e2), e3, e4), pmin(e1), pmax(e));
 		default:
-			mk(EBinop(op,e1,e),pmin(e1),pmax(e));
+			mk(EBinop(binop,e1,e),pmin(e1),pmax(e));
 		}
 	}
 
@@ -1737,7 +1738,7 @@ class Parser {
 			var expr:Null<Expr> = exprs.shift();
 			while(true) {
 				if(exprs.length == 0) break;
-				expr = mk(EBinop('+', expr, exprs.shift()));
+				expr = mk(EBinop(OpAdd, expr, exprs.shift()));
 			}
 			return expr;
 		}
@@ -2443,9 +2444,9 @@ class Parser {
 			return !evalPreproCond(e);
 		case EParent(e):
 			return evalPreproCond(e);
-		case EBinop("&&", e1, e2):
+		case EBinop(OpBoolAnd, e1, e2):
 			return evalPreproCond(e1) && evalPreproCond(e2);
-		case EBinop("||", e1, e2):
+		case EBinop(OpBoolOr, e1, e2):
 			return evalPreproCond(e1) || evalPreproCond(e2);
 		default:
 			error(EInvalidPreprocessor("Can't eval " + expr(e).getName()), readPos, readPos);

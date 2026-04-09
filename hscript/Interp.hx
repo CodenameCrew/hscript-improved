@@ -538,11 +538,15 @@ class Interp {
 			}
 			return null;
 		} catch (e:Dynamic) {
-			if (printCallStack) {
-				var stack = CallStack.exceptionStack(true);
-				error(ECustom(Std.string(e) + "\n" + CallStack.toString(stack)));
+			var errStr = printCallStack ? Std.string(e) + "\n" + CallStack.toString(CallStack.exceptionStack(true)) : Std.string(e);
+			if (errorHandler != null) {
+				#if hscriptPos
+				errorHandler(new Error(ECustom(errStr), curExpr.pmin, curExpr.pmax, curExpr.origin, curExpr.line));
+				#else
+				errorHandler(new Error(ECustom(errStr)));
+				#end
 			} else {
-				error(ECustom(Std.string(e)));
+				throw e;
 			}
 			return null;
 		}

@@ -1114,18 +1114,12 @@ class Interp {
 				}
 			case EUnop(op, prefix, e):
 				switch (op) {
-					case "!":
-						return expr(e) != true;
-					case "-":
-						return -expr(e);
-					case "++":
-						return increment(e, prefix, 1);
-					case "--":
-						return increment(e, prefix, -1);
-					case "~":
-						return ~expr(e);
-					default:
-						error(EInvalidOp(op));
+					case OpNot: return expr(e) != true;
+					case OpNeg: return -expr(e);
+					case OpIncrement: return increment(e, prefix, 1);
+					case OpDecrement: return increment(e, prefix, -1);
+					case OpNegBits: return ~expr(e);
+					default: error(EInvalidOp(op.toString()));
 				}
 			case ECall(e, params):
 				var args:Array<Dynamic> = makeArgs(params);
@@ -1472,7 +1466,7 @@ class Interp {
 		restore(old);
 	}
 
-	function makeIterator(v:Dynamic, ?allowKeyValue = false):Iterator<Dynamic> {
+	inline function makeIterator(v:Dynamic, ?allowKeyValue = false):Iterator<Dynamic> {
 		#if js
 		// don't use try/catch (very slow)
 		if(v is Array) {
@@ -1494,7 +1488,7 @@ class Interp {
 		return v;
 	}
 
-	function makeArgs(params:Array<Expr>):Array<Dynamic> {
+	inline function makeArgs(params:Array<Expr>):Array<Dynamic> {
 		var args:Array<Dynamic> = [];
 		for (p in params) {
 			switch (Tools.expr(p)) {
@@ -1514,7 +1508,7 @@ class Interp {
 		return args;
 	}
 
-	function forLoop(n:String, it:Expr, e:Expr, ?ithv:String):Void {
+	inline function forLoop(n:String, it:Expr, e:Expr, ?ithv:String):Void {
 		var isKeyValue = ithv != null;
 		var old = declared.length;
 		if(isKeyValue)

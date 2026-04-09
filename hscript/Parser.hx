@@ -604,7 +604,7 @@ class Parser {
 		return switch( expr(e) ) {
 		case EBinop(bop, e1, e2): mk(EBinop(bop, makeUnop(op, e1), e2), pmin(e1), pmax(e2));
 		case ETernary(e1, e2, e3): mk(ETernary(makeUnop(op, e1), e2, e3), pmin(e1), pmax(e3));
-		default: mk(EUnop(op,true,e),pmin(e),pmax(e));
+		default: mk(EUnop(Unop.fromString(op),true,e),pmin(e),pmax(e));
 		}
 	}
 
@@ -1386,7 +1386,7 @@ class Parser {
 						push(tk);
 						return e1;
 					}
-					return parseExprNext(mk(EUnop(op,false,e1),pmin(e1)));
+					return parseExprNext(mk(EUnop(Unop.fromString(op),false,e1),pmin(e1)));
 				}
 				return makeBinop(op,e1,parseExpr());
 			case TId(op) if( opPriority.exists(op) ):
@@ -2422,7 +2422,7 @@ class Parser {
 			}
 			mk(EIdent(buf.toString()), tokenMin, tokenMax);
 		case TOp("!"):
-			mk(EUnop("!", true, parsePreproCond()), tokenMin, tokenMax);
+			mk(EUnop(OpNot, true, parsePreproCond()), tokenMin, tokenMax);
 		default:
 			unexpected(tk);
 		}
@@ -2440,7 +2440,7 @@ class Parser {
 					error(EInvalidPreprocessor("Can't eval " + expr(e).getName() + " with " + expr(e2).getName()), readPos, readPos);
 					return false;
 			}
-		case EUnop("!", _, e):
+		case EUnop(OpNot, _, e):
 			return !evalPreproCond(e);
 		case EParent(e):
 			return evalPreproCond(e);

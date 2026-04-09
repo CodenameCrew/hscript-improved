@@ -154,6 +154,37 @@ enum abstract Binop(Int) from Int to Int {
 		}
 	}
 }
+
+enum abstract Unop(Int) from Int to Int {
+	var OpNot = 0;
+	var OpNeg = 1;
+	var OpIncrement = 2;
+	var OpDecrement = 3;
+	var OpNegBits = 4;
+
+	public static inline function fromString(s:String):Unop {
+		return switch(s) {
+			case "!": OpNot;
+			case "-": OpNeg;
+			case "++": OpIncrement;
+			case "--": OpDecrement;
+			case "~": OpNegBits;
+			default: -1;
+		}
+	}
+
+	public inline function toString():String {
+		return switch(this) {
+			case OpNot: "!";
+			case OpNeg: "-";
+			case OpIncrement: "++";
+			case OpDecrement: "--";
+			case OpNegBits: "~";
+			default: "?";
+		}
+	}
+}
+
 typedef UInt32 = #if cpp cpp.UInt32 #else Int #end;
 typedef UInt64 = #if cpp cpp.UInt64 #else Int #end;
 
@@ -184,7 +215,7 @@ enum Expr {
 	EBlock( e : Array<Expr> );
 	EField( e : Expr, f : String , ?safe : Bool );
 	EBinop( op : Binop, e1 : Expr, e2 : Expr );
-	EUnop( op : String, prefix : Bool, e : Expr );
+	EUnop( op : Unop, prefix : Bool, e : Expr );
 	ECall( e : Expr, params : Array<Expr> );
 	EIf( cond : Expr, e1 : Expr, ?e2 : Expr );
 	EWhile( cond : Expr, e : Expr );

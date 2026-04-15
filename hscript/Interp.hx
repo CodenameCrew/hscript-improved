@@ -1749,11 +1749,15 @@ class Interp {
 	function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic {
 		// Custom logic to handle super calls to prevent infinite recursion
 		if(inCustomClass) {
-			if (o == scriptObject.__superClass) {
-				if (scriptObject.__superClass is CustomClass)
-					return cast(scriptObject.__superClass, CustomClass).call(f, args, true);
-				else
-					return UnsafeReflect.callMethodUnsafe(scriptObject.__superClass, UnsafeReflect.field(scriptObject.__superClass, '_HX_SUPER__$f'), args);
+			var superCls:Dynamic = scriptObject.__superClass;
+			while (superCls != null) {
+				if (o == superCls) {
+					if (superCls is CustomClass)
+						return cast(superCls, CustomClass).call(f, args, true);
+					else
+						return UnsafeReflect.callMethodUnsafe(superCls, UnsafeReflect.field(superCls, '_HX_SUPER__$f'), args);
+				}
+				superCls = (superCls is CustomClass) ? cast(superCls, CustomClass).__superClass : null;
 			}
 		}
 

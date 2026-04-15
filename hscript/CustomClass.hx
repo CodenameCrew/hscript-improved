@@ -153,8 +153,12 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 
 		if (fn != null && Reflect.isFunction(fn))
 			return UnsafeReflect.callMethodUnsafe(null, fn, (args == null) ? [] : args);
-		else
-			__interp.error(ECustom('$name doesn\'t exists or is not a function'));
+		
+		// If not found in current class, try parent class recursively
+		if (__superClass != null && __superClass is CustomClass)
+			return cast(__superClass, CustomClass).call(name, args, toSuper);
+		
+		__interp.error(ECustom('$name doesn\'t exists or is not a function'));
 		return null;
 	}
 

@@ -618,11 +618,9 @@ class Interp {
 			return superClass == null ? customClass.hget('superConstructor') : superClass;
 		}
 
-		if (locals.exists(id)) {
-			var l = locals.get(id);
-			if(l != null) {
-				return getProperty(l.r, id, allowProperty);
-			}
+		var l = locals.get(id);
+		if(l != null) {
+			return getProperty(l.r, id, allowProperty);
 		}
 
 		if(cacheValid) {
@@ -1476,6 +1474,16 @@ class Interp {
 			v = v.keyValueIterator();
 		else if (v.iterator != null)
 			v = v.iterator();
+		#elseif cpp
+		if (v is Array) {
+			return allowKeyValue ? (v:Array<Dynamic>).keyValueIterator() : (v:Array<Dynamic>).iterator();
+		}
+		if (allowKeyValue) {
+			try v = v.keyValueIterator() catch (e:Dynamic) {};
+		}
+		if (v.hasNext == null || v.next == null) {
+			try v = v.iterator() catch (e:Dynamic) {};
+		}
 		#else
 		if(allowKeyValue) 
 			try v = v.keyValueIterator() catch (e:Dynamic) {};
@@ -1490,6 +1498,9 @@ class Interp {
 
 	inline function makeArgs(params:Array<Expr>):Array<Dynamic> {
 		var args:Array<Dynamic> = [];
+		#if cpp
+		untyped __cpp__('{0}->reserve({1}->length)', args, params);
+		#end
 		for (p in params) {
 			switch (Tools.expr(p)) {
 				case EIdent(id):
@@ -1624,8 +1635,14 @@ class Interp {
 		}
 		var v:Null<Dynamic> = null;
 		if(isBypassAccessor) {
+			#if cpp
+			v = untyped __cpp__('{0}->__Field({1}, ::hx::paccNever)', o, f);
+			if (v == null && useRedirects)
+				v = Reflect.field(cls, f);
+			#else
 			if ((v = UnsafeReflect.field(o, f)) == null && useRedirects)
 				v = Reflect.field(cls, f);
+			#end
 		}
 
 		if(v == null) {
@@ -1673,11 +1690,19 @@ class Interp {
 			return obj.hset(f, v);
 		}
 		// Can use unsafe reflect here, since we checked for null above
+		#if cpp
+		if(isBypassAccessor) {
+			untyped __cpp__('{0}->__SetField({1}, {2}, ::hx::paccNever)', o, f, v);
+		} else {
+			untyped __cpp__('{0}->__SetField({1}, {2}, ::hx::paccAlways)', o, f, v);
+		}
+		#else
 		if(isBypassAccessor) {
 			UnsafeReflect.setField(o, f, v);
 		} else {
 			UnsafeReflect.setProperty(o, f, v);
 		}
+		#end
 		return v;
 	}
 

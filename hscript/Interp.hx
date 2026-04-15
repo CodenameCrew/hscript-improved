@@ -1750,14 +1750,23 @@ class Interp {
 		// Custom logic to handle super calls to prevent infinite recursion
 		if(inCustomClass) {
 			var superCls:Dynamic = scriptObject.__superClass;
-			while (superCls != null) {
-				if (o == superCls) {
-					if (superCls is CustomClass)
-						return cast(superCls, CustomClass).call(f, args, true);
-					else
-						return UnsafeReflect.callMethodUnsafe(superCls, UnsafeReflect.field(superCls, '_HX_SUPER__$f'), args);
+			if (o == superCls) {
+				if (superCls is CustomClass)
+					return cast(superCls, CustomClass).call(f, args, true);
+				else
+					return UnsafeReflect.callMethodUnsafe(superCls, UnsafeReflect.field(superCls, '_HX_SUPER__$f'), args);
+			}
+			if (superCls is CustomClass) {
+				superCls = cast(superCls, CustomClass).__superClass;
+				while (superCls != null) {
+					if (o == superCls) {
+						if (superCls is CustomClass)
+							return cast(superCls, CustomClass).call(f, args, true);
+						else
+							return UnsafeReflect.callMethodUnsafe(superCls, UnsafeReflect.field(superCls, '_HX_SUPER__$f'), args);
+					}
+					superCls = (superCls is CustomClass) ? cast(superCls, CustomClass).__superClass : null;
 				}
-				superCls = (superCls is CustomClass) ? cast(superCls, CustomClass).__superClass : null;
 			}
 		}
 

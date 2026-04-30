@@ -26,11 +26,11 @@ import hscript.Expr.FieldPropertyAccess;
  * @see https://haxe.org/manual/class-field-property.html
  */
 @:access(hscript.Interp)
-@:structInit
 class Property {
 	private static inline var GET = 'get_';
 	private static inline var SET = 'set_';
 
+	public var name:String;
 	public var r:Dynamic;
 	public var getter:FieldPropertyAccess;
 	public var setter:FieldPropertyAccess;
@@ -43,24 +43,54 @@ class Property {
 	var isVar:Bool;
 	var interp:Interp;
 
-	public function new(r:Dynamic, getter:FieldPropertyAccess, setter:FieldPropertyAccess, isVar:Bool, isStatic:Bool, interp:Interp) {
+	@:allow(hscript.Interp)
+	private var getterFunc(get, never):String;
+	private function get_getterFunc():String {
+		return '$GET$name';
+	}
+
+	@:allow(hscript.Interp)
+	private var setterFunc(get, never):String;
+	private function get_setterFunc():String {
+		return '$SET$name';
+	}
+
+	public function new(name:String, r:Dynamic, getter:FieldPropertyAccess, setter:FieldPropertyAccess, isVar:Bool, isStatic:Bool, interp:Interp) {
+		this.name = name;
 		this.r = r;
 		this.getter = getter;
 		this.setter = setter;
 		this.isVar = isVar;
 		this.__isStatic = isStatic;
 		this.interp = interp;
+
+		setLookup();
+	}
+
+	private inline function setLookup() {
+		/*
+		if(getter == AGet)
+			interp.propertyLookup.set(getterFunc, {isStatic: isStatic, func: () -> return callGetter()});
+		if(setter == ASet)
+			interp.propertyLookup.set(setterFunc, {isStatic: isStatic, func: (v) -> return callSetter(v)});
+		*/
 	}
 
 	var __allowReadAccess:Bool = false;
 	var __allowWriteAccess:Bool = false;
 	var __allowSetGet:Null<Bool> = null;
+
+	@:allow(hscript.Interp)
+	var __callingProperty:Bool = false; // flag to check if the get/set function hasn't been called directly
+
 	final __isStatic:Bool = false;
 
-	public function callGetter(name:String) {
+	public function callGetter():Dynamic {
 		switch (getter) {
 			case AGet | ADynamic:
-				var fName:String = '$GET$name';
+				var fName:String = getterFunc;//'$GET$name';
+				if(!__callingProperty)
+					__allowReadAccess = true;
 				if (!__allowReadAccess && (__allowSetGet != null && __allowSetGet || !interp.isBypassAccessor)) {
 					if (varExists(fName)) {
 						return callAccessor(fName);
@@ -80,10 +110,12 @@ class Property {
 		return r;
 	}
 
-	public function callSetter(name:String, val:Dynamic) {
+	public function callSetter(val:Dynamic):Dynamic {
 		switch (setter) {
 			case ASet | ADynamic:
-				var fName:String = '$SET$name';
+				var fName:String = setterFunc;//'$SET$name';
+				if(!__callingProperty)
+					__allowWriteAccess = true;
 				if (!__allowWriteAccess && (__allowSetGet != null && __allowSetGet || !interp.isBypassAccessor)) {
 					if (varExists(fName))
 						return callAccessor(fName, [val], true);
@@ -114,6 +146,9 @@ class Property {
 
 			if (isWrite) __allowWriteAccess = false;
 			else __allowReadAccess = false;
+
+			if(__callingProperty)
+				__callingProperty = false;
 
 			return rt;
 		} else

@@ -97,8 +97,11 @@ class Property {
 					} else
 						interp.error(ECustom('Method $fName required by property $name is missing'));
 				} else {
-					if ((setter == ADefault || setter == ANull) || isVar)
+					if ((setter == ADefault || setter == ANull) || isVar) {
+						if(!__callingProperty)
+							__allowReadAccess = false;
 						return r;
+					}
 					else
 						interp.error(ECustom('Field $name cannot be accessed because it is not a real variable${interp.isBypassAccessor ? '. Add @:isVar to enable it' : ''}'));
 				}
@@ -122,8 +125,11 @@ class Property {
 					else
 						interp.error(ECustom('Method $fName required by property $name is missing'));
 				} else {
-					if ((getter == ADefault || getter == ANull) || isVar)
+					if ((getter == ADefault || getter == ANull) || isVar) {
+						if(!__callingProperty)
+							__allowWriteAccess = false;
 						return r = val;
+					}
 					else
 						interp.error(ECustom('Field $name cannot be accessed because it is not a real variable${interp.isBypassAccessor ? '. Add @:isVar to enable it' : ''}'));
 				}

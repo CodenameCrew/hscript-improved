@@ -1803,6 +1803,7 @@ class Interp {
 		if (usingHandler.usingEntries.iterator().hasNext()) { // If is not empty
 			var v:Dynamic = null;
 			var clsName:String = o is CustomClassHandler ? cast(o, CustomClassHandler).name : Type.getClassName(Type.getClass(o));
+			// TODO: optimize this
 			if(!usingHandler.entryExists(clsName)) {
 				for (n => us in usingHandler.usingEntries) {
 					if (us.hasField(f)) {

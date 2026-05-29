@@ -30,11 +30,29 @@ class Property {
 	private static inline var GET = 'get_';
 	private static inline var SET = 'set_';
 
+	/**
+	 * Name of the attached field.
+	 */
 	public var name:String;
+
+	/**
+	 * The current value. If isn't initialized, it's always `null`.
+	 */
 	public var r:Dynamic;
+
+	/**
+	 * The getter property kind
+	 */
 	public var getter:FieldPropertyAccess;
+
+	/**
+	 * The setter property kind
+	 */
 	public var setter:FieldPropertyAccess;
 
+	/**
+	 * If the field is declared as static.
+	 */
 	public var isStatic(get, never):Bool;
 	function get_isStatic() {
 		return __isStatic && interp.allowStaticVariables;
@@ -45,13 +63,13 @@ class Property {
 
 	@:allow(hscript.Interp)
 	private var getterFunc(get, never):String;
-	private function get_getterFunc():String {
+	private inline function get_getterFunc():String {
 		return '$GET$name';
 	}
 
 	@:allow(hscript.Interp)
 	private var setterFunc(get, never):String;
-	private function get_setterFunc():String {
+	private inline function get_setterFunc():String {
 		return '$SET$name';
 	}
 
@@ -63,32 +81,27 @@ class Property {
 		this.isVar = isVar;
 		this.__isStatic = isStatic;
 		this.interp = interp;
-
-		setLookup();
 	}
 
-	private inline function setLookup() {
-		/*
-		if(getter == AGet)
-			interp.propertyLookup.set(getterFunc, {isStatic: isStatic, func: () -> return callGetter()});
-		if(setter == ASet)
-			interp.propertyLookup.set(setterFunc, {isStatic: isStatic, func: (v) -> return callSetter(v)});
-		*/
-	}
-
+	// Internal flags to gain access to the current field value (if isn't a property field)
 	var __allowReadAccess:Bool = false;
 	var __allowWriteAccess:Bool = false;
+	// Internal flag to gain access if the field is accessed with @:bypassAccessor
+	// TODO: check if it's necessary to use a nullable Bool
 	var __allowSetGet:Null<Bool> = null;
 
+	/**
+	 * Internal Flag to check if the get/set function hasn't been called directly.
+	 */
 	@:allow(hscript.Interp)
-	var __callingProperty:Bool = false; // flag to check if the get/set function hasn't been called directly
+	var __callingProperty:Bool = false;
 
 	final __isStatic:Bool = false;
 
 	public function callGetter():Dynamic {
 		switch (getter) {
 			case AGet | ADynamic:
-				var fName:String = getterFunc;//'$GET$name';
+				var fName:String = getterFunc;
 				if(!__callingProperty)
 					__allowReadAccess = true;
 				if (!__allowReadAccess && (__allowSetGet != null && __allowSetGet || !interp.isBypassAccessor)) {
@@ -116,7 +129,7 @@ class Property {
 	public function callSetter(val:Dynamic):Dynamic {
 		switch (setter) {
 			case ASet | ADynamic:
-				var fName:String = setterFunc;//'$SET$name';
+				var fName:String = setterFunc;
 				if(!__callingProperty)
 					__allowWriteAccess = true;
 				if (!__allowWriteAccess && (__allowSetGet != null && __allowSetGet || !interp.isBypassAccessor)) {

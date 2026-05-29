@@ -88,7 +88,7 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
 		return new CustomClass(this, args);
 
 	@:allow(hscript.Interp)
-	function hasField(name:String) {
+	inline function hasField(name:String) {
         return __staticFields.contains(name);
     }
 
@@ -121,10 +121,9 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
 
 	public function hget(name:String):Dynamic {
 		if(name == 'new') {
-			var __constructor = Reflect.makeVarArgs(function(args:Array<Dynamic>) {
-				return this.hnew(args);
+			return Reflect.makeVarArgs(function(args:Array<Dynamic>):Dynamic {
+				return inline this.hnew(args);
 			});
-			return __constructor;
 		}
 		
 		if(hasField(name)) {

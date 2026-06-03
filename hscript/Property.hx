@@ -33,7 +33,7 @@ class Property {
 	/**
 	 * Name of the attached field.
 	 */
-	public var name:String;
+	public final name:String;
 
 	/**
 	 * The current value. If isn't initialized, it's always `null`.
@@ -43,12 +43,12 @@ class Property {
 	/**
 	 * The getter property kind
 	 */
-	public var getter:FieldPropertyAccess;
+	public final getter:FieldPropertyAccess;
 
 	/**
 	 * The setter property kind
 	 */
-	public var setter:FieldPropertyAccess;
+	public final setter:FieldPropertyAccess;
 
 	/**
 	 * If the field is declared as static.

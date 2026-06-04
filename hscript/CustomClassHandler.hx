@@ -99,7 +99,7 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
             prop.__allowSetGet = this.__allowSetGet;
 			prop.__callingProperty = true;
             var r = prop.callGetter();
-            prop.__allowSetGet = null;
+            prop.__allowSetGet = true;
             return r;
         }
         return f;
@@ -112,7 +112,7 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
             prop.__allowSetGet = this.__allowSetGet;
 			prop.__callingProperty = true;
             var r = prop.callSetter(val);
-            prop.__allowSetGet = null;
+            prop.__allowSetGet = true;
             return r;
         }
         __interp.variables.set(name, val);

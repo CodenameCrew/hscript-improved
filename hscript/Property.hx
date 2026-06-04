@@ -87,8 +87,7 @@ class Property {
 	var __allowReadAccess:Bool = false;
 	var __allowWriteAccess:Bool = false;
 	// Internal flag to gain access if the field is accessed with @:bypassAccessor
-	// TODO: check if it's necessary to use a nullable Bool
-	var __allowSetGet:Null<Bool> = null;
+	var __allowSetGet:Bool = true;
 
 	/**
 	 * Internal Flag to check if the get/set function hasn't been called directly.
@@ -104,7 +103,7 @@ class Property {
 				var fName:String = getterFunc;
 				if(!__callingProperty)
 					__allowReadAccess = true;
-				if (!__allowReadAccess && (__allowSetGet != null && __allowSetGet || !interp.isBypassAccessor)) {
+				if (!__allowReadAccess && (__allowSetGet || !interp.isBypassAccessor)) {
 					if (varExists(fName)) {
 						return callAccessor(fName);
 					} else
@@ -132,9 +131,9 @@ class Property {
 				var fName:String = setterFunc;
 				if(!__callingProperty)
 					__allowWriteAccess = true;
-				if (!__allowWriteAccess && (__allowSetGet != null && __allowSetGet || !interp.isBypassAccessor)) {
+				if (!__allowWriteAccess && (__allowSetGet || !interp.isBypassAccessor)) {
 					if (varExists(fName))
-						return callAccessor(fName, [val], true);
+						return callAccessor(fName, val);
 					else
 						interp.error(ECustom('Method $fName required by property $name is missing'));
 				} else {
@@ -154,14 +153,15 @@ class Property {
 		return r = val;
 	}
 
-	private function callAccessor(f:String, ?args:Array<Dynamic>, isWrite:Bool = false):Dynamic {
+	private function callAccessor(f:String, ?value:Dynamic):Dynamic {
 		var fn = isStatic ? interp.staticVariables.get(f) : interp.variables.get(f);
 		var rt:Dynamic = null;
+		var isWrite:Bool = value != null;
 		if (fn != null && Reflect.isFunction(fn)) {
 			if (isWrite) __allowWriteAccess = true;
 			else __allowReadAccess = true;
 
-			rt = UnsafeReflect.callMethodUnsafe(null, fn, args == null ? [] : args);
+			rt = UnsafeReflect.callMethodUnsafe(null, fn, isWrite ? [value] : []);
 
 			if (isWrite) __allowWriteAccess = false;
 			else __allowReadAccess = false;
@@ -176,7 +176,7 @@ class Property {
 		return rt;
 	}
 
-	private function varExists(n:String) {
+	private inline function varExists(n:String) {
 		return isStatic ? interp.staticVariables.exists(n) : interp.variables.exists(n);
 	}
 }

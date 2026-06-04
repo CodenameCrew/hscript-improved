@@ -106,7 +106,7 @@ enum abstract Binop(Int) from Int to Int {
 			case "<<=": OpShlAssign;
 			case ">>=": OpShrAssign;
 			case ">>>=": OpUshrAssign;
-			case "??=": OpNcoalAssign;
+			case _ if (s == "??" + "="): OpNcoalAssign;
 			default: -1;
 		}
 	}
@@ -149,7 +149,7 @@ enum abstract Binop(Int) from Int to Int {
 			case OpShlAssign: "<<=";
 			case OpShrAssign: ">>=";
 			case OpUshrAssign: ">>>=";
-			case OpNcoalAssign: "??=";
+			case OpNcoalAssign: "??" + "=";
 			default: "?";
 		}
 	}

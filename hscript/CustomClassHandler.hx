@@ -92,9 +92,9 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
         var f = __interp.variables.get(name);
         if(f is Property && allowProperty) {
             var prop:Property = cast f;
-            prop.__allowSetGet = this.__allowSetGet;
-            var r = prop.callGetter();
-            prop.__allowSetGet = true;
+            //prop.__allowSetGet = this.__allowSetGet;
+            var r = prop.get(!__allowSetGet);
+            //prop.__allowSetGet = true;
             return r;
         }
         return f;
@@ -104,9 +104,9 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
         var f = getField(name, false);
         if(f is Property) {
             var prop:Property = cast f;
-            prop.__allowSetGet = this.__allowSetGet;
-            var r = prop.callSetter(val);
-            prop.__allowSetGet = true;
+            //prop.__allowSetGet = this.__allowSetGet;
+            var r = prop.set(val, !__allowSetGet);
+            //prop.__allowSetGet = true;
             return r;
         }
         __interp.variables.set(name, val);

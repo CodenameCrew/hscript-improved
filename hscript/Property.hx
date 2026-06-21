@@ -93,17 +93,32 @@ class Property {
 	 * Internal Flag to check if the get/set function hasn't been called directly.
 	 */
 	@:allow(hscript.Interp)
+	@:allow(hscript.CustomClass)
 	var __callingProperty:Bool = false;
 
 	final __isStatic:Bool = false;
 
-	public function callGetter():Dynamic {
+	public function get(isBypassAccessor:Bool) {
+		if(isBypassAccessor) __allowSetGet = false;
+		var r:Dynamic = callGetter();
+		if(isBypassAccessor) __allowSetGet = true;
+		return r;
+	}
+
+	public function set(value:Dynamic, isBypassAccessor:Bool) {
+		if(isBypassAccessor) __allowSetGet = false;
+		var r:Dynamic = callSetter(value);
+		if(isBypassAccessor) __allowSetGet = true;
+		return r;
+	}
+
+	private function callGetter():Dynamic {
 		switch (getter) {
 			case AGet | ADynamic:
 				var fName:String = getterFunc;
 				if(!__callingProperty)
 					__allowReadAccess = true;
-				if (!__allowReadAccess && (__allowSetGet || !interp.isBypassAccessor)) {
+				if (!__allowReadAccess && __allowSetGet) {
 					if (varExists(fName)) {
 						return callAccessor(fName);
 					} else
@@ -125,13 +140,13 @@ class Property {
 		return r;
 	}
 
-	public function callSetter(val:Dynamic):Dynamic {
+	private function callSetter(val:Dynamic):Dynamic {
 		switch (setter) {
 			case ASet | ADynamic:
 				var fName:String = setterFunc;
 				if(!__callingProperty)
 					__allowWriteAccess = true;
-				if (!__allowWriteAccess && (__allowSetGet || !interp.isBypassAccessor)) {
+				if (!__allowWriteAccess && __allowSetGet) {
 					if (varExists(fName))
 						return callAccessor(fName, val);
 					else

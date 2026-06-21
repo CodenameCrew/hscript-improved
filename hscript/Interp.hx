@@ -136,11 +136,16 @@ class Interp {
 
 	public var errorHandler:Error->Void;
 	public var warnHandler:Error->Void;
+	// TODO: set this callback as a Global Resolver
+	/**
+	 * Custom Import resolver. It's called when an import couldn't be resolved.
+	 */
 	public var importFailedCallback:Array<String>->Null<String>->Bool;
 
 	public var customClasses:Map<String, CustomClassHandler>;
 	public var variables:Map<String, Dynamic>;
 	public var publicVariables:Map<String, Dynamic>;
+	// TODO: maybe turn this completely static
 	public var staticVariables:Map<String, Dynamic>;
 
 	// warning can be null
@@ -297,7 +302,7 @@ class Interp {
 						if (obj != null && obj is Property) {
 							var prop:Property = cast obj;
 							prop.__callingProperty = true;
-							return prop.callSetter(v);
+							return prop.set(v, isBypassAccessor);
 						}
 						varLocationCache.remove(id);
 						setVar(id, v);
@@ -305,7 +310,7 @@ class Interp {
 				} else if (l.r is Property) {
 					var prop:Property = cast l.r;
 					prop.__callingProperty = true;
-					return prop.callSetter(v);
+					return prop.set(v, isBypassAccessor);
 				} else {
 					l.r = v;
 					if (l.depth == 0) {
@@ -380,7 +385,7 @@ class Interp {
 						if (obj != null && obj is Property) {
 							var prop:Property = cast obj;
 							prop.__callingProperty = true;
-							return prop.callSetter(v);
+							return prop.set(v, isBypassAccessor);
 						}
 						varLocationCache.remove(id);
 						setVar(id, v);
@@ -391,7 +396,7 @@ class Interp {
 					if (l.r is Property) {
 						var prop:Property = cast l.r;
 						prop.__callingProperty = true;
-						return prop.callSetter(v);
+						return prop.set(v, isBypassAccessor);
 					}
 					l.r = v;
 					if (l.depth == 0) {
@@ -436,18 +441,18 @@ class Interp {
 					if (v is Property) {
 						prop = cast v;
 						prop.__callingProperty = true;
-						v = prop.callGetter();
+						v = prop.get(isBypassAccessor);
 					}
 
 					if (prefix) {
 						v += delta;
 						if (prop != null)
-							prop.callSetter(v);
+							prop.set(v, isBypassAccessor);
 						else
 							l.r = v;
 					} else {
 						if (prop != null)
-							prop.callSetter(v + delta);
+							prop.set(v + delta, isBypassAccessor);
 						else
 							l.r = v + delta;
 					}
@@ -459,20 +464,20 @@ class Interp {
 					if (v is Property) {
 						prop = cast v;
 						prop.__callingProperty = true;
-						v = prop.callGetter();
+						v = prop.get(isBypassAccessor);
 					}
 
 					if (prefix) {
 						v += delta;
 						if (prop != null)
-							prop.callSetter(v);
+							prop.set(v, isBypassAccessor);
 						else {
 							varLocationCache.remove(id);
 							setVar(id, v);
 						}
 					} else {
 						if (prop != null)
-							prop.callSetter(v + delta);
+							prop.set(v + delta, isBypassAccessor);
 						else {
 							varLocationCache.remove(id);
 							setVar(id, v + delta);
@@ -615,7 +620,7 @@ class Interp {
 		if(allowProperty && o != null && o is Property) {
 			var prop:Property = cast o;
 			prop.__callingProperty = true;
-			return cast(o, Property).callGetter();
+			return prop.get(isBypassAccessor);
 		}
 		else
 			return o;

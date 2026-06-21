@@ -60,23 +60,19 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
 			if(!__interp.variables.exists(f))
 				__interp.variables.set(f, v);
 
-		for(e in fields.copy()) {
-			var validField:Bool = false;
+		for(i => e in fields.copy()) {
+			var isValid:Bool = false;
 			var staticField:Bool = false;
-			var fieldName:String = "";
+			var fieldName:String = null;
 			switch (Tools.expr(e)) {
-				case EVar(n, _, _, _, isStatic):
-					validField = true;
-					staticField = isStatic;
-					fieldName = n;
-				case EFunction(_, _, n, _, _, isStatic, _, _, _, _):
-					validField = true;
+				case EVar(n, _, _, _, isStatic) | EFunction(_, _, n, _, _, isStatic):
+					isValid = true;
 					staticField = isStatic;
 					fieldName = n;
 				default:
 			}
 
-			if(staticField && validField) {
+			if(staticField && isValid) {
 				__interp.exprReturn(e);
 				__staticFields.push(fieldName);
 				fields.remove(e);

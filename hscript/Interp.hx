@@ -301,7 +301,6 @@ class Interp {
 						var obj = resolve(id, false, false);
 						if (obj != null && obj is Property) {
 							var prop:Property = cast obj;
-							prop.__callingProperty = true;
 							return prop.set(v, isBypassAccessor);
 						}
 						varLocationCache.remove(id);
@@ -309,7 +308,6 @@ class Interp {
 					}
 				} else if (l.r is Property) {
 					var prop:Property = cast l.r;
-					prop.__callingProperty = true;
 					return prop.set(v, isBypassAccessor);
 				} else {
 					l.r = v;
@@ -384,7 +382,6 @@ class Interp {
 						var obj = resolve(id, true, false);
 						if (obj != null && obj is Property) {
 							var prop:Property = cast obj;
-							prop.__callingProperty = true;
 							return prop.set(v, isBypassAccessor);
 						}
 						varLocationCache.remove(id);
@@ -395,7 +392,6 @@ class Interp {
 					var l = locals.get(id);
 					if (l.r is Property) {
 						var prop:Property = cast l.r;
-						prop.__callingProperty = true;
 						return prop.set(v, isBypassAccessor);
 					}
 					l.r = v;
@@ -440,7 +436,6 @@ class Interp {
 					var prop:Property = null;
 					if (v is Property) {
 						prop = cast v;
-						prop.__callingProperty = true;
 						v = prop.get(isBypassAccessor);
 					}
 
@@ -463,7 +458,6 @@ class Interp {
 					var prop:Property = null;
 					if (v is Property) {
 						prop = cast v;
-						prop.__callingProperty = true;
 						v = prop.get(isBypassAccessor);
 					}
 
@@ -619,7 +613,6 @@ class Interp {
 	inline function getProperty(o:Null<Dynamic>, n:String, allowProperty:Bool = true):Dynamic {
 		if(allowProperty && o != null && o is Property) {
 			var prop:Property = cast o;
-			prop.__callingProperty = true;
 			return prop.get(isBypassAccessor);
 		}
 		else

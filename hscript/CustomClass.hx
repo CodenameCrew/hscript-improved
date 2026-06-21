@@ -174,7 +174,6 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 		if (f != null && allowProperty && f is Property) {
 			var prop:Property = cast f;
 			//prop.__allowSetGet = this.__allowSetGet;
-			prop.__callingProperty = true;
 			var r = prop.get(!__allowSetGet);
 			//prop.__allowSetGet = true;
 			return r;
@@ -187,7 +186,6 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 		if (f != null && f is Property) {
 			var prop:Property = cast f;
 			//prop.__allowSetGet = this.__allowSetGet;
-			prop.__callingProperty = true;
 			var r = prop.set(val, !__allowSetGet);
 			//prop.__allowSetGet = true;
 			return r;

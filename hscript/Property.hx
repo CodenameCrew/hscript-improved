@@ -89,13 +89,6 @@ class Property {
 	// Internal flag to gain access if the field is accessed with @:bypassAccessor
 	var __allowSetGet:Bool = true;
 
-	/**
-	 * Internal Flag to check if the get/set function hasn't been called directly.
-	 */
-	@:allow(hscript.Interp)
-	@:allow(hscript.CustomClass)
-	var __callingProperty:Bool = false;
-
 	final __isStatic:Bool = false;
 
 	public function get(isBypassAccessor:Bool) {
@@ -116,8 +109,6 @@ class Property {
 		switch (getter) {
 			case AGet | ADynamic:
 				var fName:String = getterFunc;
-				if(!__callingProperty)
-					__allowReadAccess = true;
 				if (!__allowReadAccess && __allowSetGet) {
 					if (varExists(fName)) {
 						return callAccessor(fName);
@@ -125,8 +116,6 @@ class Property {
 						interp.error(ECustom('Method $fName required by property $name is missing'));
 				} else {
 					if ((setter == ADefault || setter == ANull) || isVar) {
-						if(!__callingProperty)
-							__allowReadAccess = false;
 						return r;
 					}
 					else
@@ -144,8 +133,6 @@ class Property {
 		switch (setter) {
 			case ASet | ADynamic:
 				var fName:String = setterFunc;
-				if(!__callingProperty)
-					__allowWriteAccess = true;
 				if (!__allowWriteAccess && __allowSetGet) {
 					if (varExists(fName))
 						return callAccessor(fName, val);
@@ -153,8 +140,6 @@ class Property {
 						interp.error(ECustom('Method $fName required by property $name is missing'));
 				} else {
 					if ((getter == ADefault || getter == ANull) || isVar) {
-						if(!__callingProperty)
-							__allowWriteAccess = false;
 						return r = val;
 					}
 					else
@@ -180,9 +165,6 @@ class Property {
 
 			if (isWrite) __allowWriteAccess = false;
 			else __allowReadAccess = false;
-
-			if(__callingProperty)
-				__callingProperty = false;
 
 			return rt;
 		} else

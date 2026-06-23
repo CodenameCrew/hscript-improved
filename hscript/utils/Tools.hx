@@ -19,8 +19,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package hscript;
-import hscript.Expr;
+package hscript.utils;
+
+import hscript.behaviours.IHScriptAbstractBehaviour;
+import hscript.expr.Expr;
 
 class Tools {
 

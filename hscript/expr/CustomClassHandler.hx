@@ -1,10 +1,16 @@
-package hscript;
+package hscript.expr;
+
+import hscript.behaviours.IHScriptCustomAccessBehaviour;
+import hscript.behaviours.IHScriptCustomConstructor;
+import hscript.behaviours.IHScriptCustomBehaviour;
+import hscript.utils.Tools;
+import hscript.Interp;
 
 /**
  * Provides handlers for static custom class fields and instantiation.
  */
-@:access(hscript.Property)
-class CustomClassHandler implements IHScriptCustomConstructor implements IHScriptCustomAccessBehaviour{
+@:access(hscript.expr.Property)
+class CustomClassHandler implements IHScriptCustomConstructor implements IHScriptCustomAccessBehaviour {
 	public var ogInterp:Interp;
 	public var name:String;
 	public var fields:Array<Expr>;

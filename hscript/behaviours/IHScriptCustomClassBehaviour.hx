@@ -1,4 +1,4 @@
-package hscript;
+package hscript.behaviours;
 
 /**
  * Special Interface to make a class usable for Custom Classes.

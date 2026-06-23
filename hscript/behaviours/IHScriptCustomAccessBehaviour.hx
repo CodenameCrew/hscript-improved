@@ -1,4 +1,4 @@
-package hscript;
+package hscript.behaviours;
 
 /**
  * Same Interface as IHScriptCustomBehaviour but for Property.

@@ -20,8 +20,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 package hscript;
-import hscript.Expr;
 
+import hscript.expr.Expr;
 
 enum VarMode {
 	Defined;

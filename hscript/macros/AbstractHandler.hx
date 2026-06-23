@@ -8,6 +8,8 @@ import haxe.macro.Context;
 import haxe.macro.Printer;
 import haxe.macro.Compiler;
 
+import hscript.Config;
+
 using StringTools;
 
 class AbstractHandler {

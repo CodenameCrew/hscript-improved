@@ -1,4 +1,4 @@
-package hscript;
+package hscript.behaviours;
 
 // Soon...
 interface IHScriptAbstractBehaviour extends IHScriptCustomBehaviour {

@@ -1,8 +1,8 @@
-package hscript;
+package hscript.expr;
 
 import hscript.utils.UnsafeReflect;
 import hscript.Interp;
-import hscript.Expr.FieldPropertyAccess;
+import hscript.expr.Expr.FieldPropertyAccess;
 
 /**
  * Special variable that handles 'getter/setter' function calls

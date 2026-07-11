@@ -172,10 +172,10 @@ class Interp {
 	public var allowStaticVariables:Bool = false;
 	public var allowPublicVariables:Bool = false;
 
-	// TODO: move this to an external class
-	public var importBlocklist:Array<String> = [
-		// "flixel.FlxG"
-	];
+	public var importBlocklist(get, never):Array<String>;
+	private inline function get_importBlocklist():Array<String> {
+		return Config.IMPORT_BLACKLIST;
+	}
 
 	var usingHandler:UsingHandler;
 
@@ -823,7 +823,10 @@ class Interp {
 				
 				function importResolve(__clsName:String):Null<Dynamic> {
 					var _realClassName = getLocalImportRedirect(__clsName);
-					if(importBlocklist.contains(_realClassName)) return null;
+					if(importBlocklist.contains(_realClassName)) {
+						warn(ECustom('Invalid class: $_realClassName is blacklisted'));
+						return null;
+					}
 
 					var _cl = Type.resolveClass(_realClassName);
 					if(_cl == null) _cl = Type.resolveClass('${_realClassName}_HSC');

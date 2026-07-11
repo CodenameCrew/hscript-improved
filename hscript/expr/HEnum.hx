@@ -1,5 +1,6 @@
-package hscript;
+package hscript.expr;
 
+import hscript.behaviours.IHScriptCustomBehaviour;
 import hscript.utils.UnsafeReflect;
 
 /**

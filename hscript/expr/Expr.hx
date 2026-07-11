@@ -19,7 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package hscript;
+package hscript.expr;
 
 typedef Int8 = #if cpp cpp.Int8 #elseif java java.Int8 #elseif cs cs.Int8 #else Int #end;
 typedef Int16 = #if cpp cpp.Int16 #elseif java java.Int16 #elseif cs cs.Int16 #else Int #end;

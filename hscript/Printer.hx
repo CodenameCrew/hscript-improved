@@ -20,7 +20,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 package hscript;
-import hscript.Expr;
+
+import hscript.expr.Expr;
+import hscript.expr.Expr.Error;
+import hscript.utils.Tools;
 
 class Printer {
 
@@ -468,7 +471,7 @@ class Printer {
 		return new Printer().exprToString(e);
 	}
 
-	public static function errorToString( e : Expr.Error ):String {
+	public static function errorToString( e : Error ):String {
 		var message = switch( #if hscriptPos e.e #else e #end ) {
 			case EInvalidChar(c): "Invalid character: '"+(StringTools.isEof(c) ? "EOF (End Of File)" : String.fromCharCode(c))+"' ("+c+")";
 			case EUnexpected(s): "Unexpected token: \""+s+"\"";

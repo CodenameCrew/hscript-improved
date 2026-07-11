@@ -1,5 +1,6 @@
 package hscript;
-import hscript.Expr;
+
+import hscript.expr.Expr;
 
 /**
 	This is a special type that can be used in API.

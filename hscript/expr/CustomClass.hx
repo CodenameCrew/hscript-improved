@@ -1,6 +1,10 @@
-package hscript;
+package hscript.expr;
 
+import hscript.behaviours.IHScriptCustomClassBehaviour;
 import hscript.utils.UnsafeReflect;
+import hscript.utils.Tools;
+import hscript.Interp;
+
 import haxe.Constraints.Function;
 
 using Lambda;
@@ -12,7 +16,7 @@ using Lambda;
  * 
  * @author Jamextreme140
  */
-@:access(hscript.CustomClassHandler)
+@:access(hscript.expr.CustomClassHandler)
 class CustomClass implements IHScriptCustomClassBehaviour {
 	public var className(get, never):String;
 

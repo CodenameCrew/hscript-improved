@@ -28,14 +28,20 @@
  */
 package hscript;
 
-import haxe.Exception;
-import haxe.ds.StringMap;
-import hscript.HEnum.HEnumValue;
-import haxe.CallStack;
+import hscript.behaviours.*;
+import hscript.expr.*;
+
+import hscript.utils.Tools;
 import hscript.utils.UsingHandler;
 import hscript.utils.UnsafeReflect;
+import hscript.expr.HEnum.HEnumValue;
+import hscript.expr.HEnum;
+import hscript.expr.Expr;
+
+import haxe.Exception;
+import haxe.ds.StringMap;
+import haxe.CallStack;
 import haxe.PosInfos;
-import hscript.Expr;
 import haxe.Constraints.IMap;
 
 using StringTools;
@@ -83,7 +89,7 @@ class RedeclaredVar {
 	public var depth:Int;
 }
 
-@:access(hscript.CustomClass)
+@:access(hscript.expr.CustomClass)
 @:analyzer(optimize, local_dce, fusion, user_var_fusion)
 class Interp {
 	private var hasScriptObject(default, null):Bool = false;
@@ -1754,7 +1760,7 @@ class Interp {
 	}
 
 	// Custom Class Static Extension
-	@:access(hscript.CustomClassHandler)
+	@:access(hscript.expr.CustomClassHandler)
 	function setCustomClassUsing(name:String, cls:CustomClassHandler) {
 		if (usingHandler.entryExists(name)) return;
 

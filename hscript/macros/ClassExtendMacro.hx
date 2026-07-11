@@ -11,6 +11,8 @@ import haxe.macro.Type.ClassField;
 import haxe.macro.Type.VarAccess;
 import haxe.macro.*;
 
+import hscript.Config;
+
 using StringTools;
 
 // BIG TODO: make typed classes scriptable
@@ -339,7 +341,7 @@ class ClassExtendMacro {
 				pack: cl.pack.copy(),
 				name: cl.name
 			}, [
-				{name: "IHScriptCustomClassBehaviour", pack: ["hscript"]}
+				{name: "IHScriptCustomClassBehaviour", pack: ["hscript.behaviours"]}
 			], false, true, false);
 			shadowClass.name = '${cl.name}$CLASS_SUFFIX';
 			var imports = Context.getLocalImports().copy();
@@ -484,17 +486,17 @@ class ClassExtendMacro {
 						if(__class__fields.contains(name)) {
 							var v:Dynamic = __interp.variables.get(name);
 							var ba:Bool = @:privateAccess __interp.isBypassAccessor;
-							if(v != null && v is hscript.Property) 
-								return cast(v, hscript.Property).get(ba);
+							if(v != null && v is hscript.expr.Property) 
+								return cast(v, hscript.expr.Property).get(ba);
 							return v;
 						}
 						else @:privateAccess {
-							var cls:hscript.CustomClass = cast __interp.__customClass.__upperClass;
+							var cls:hscript.expr.CustomClass = cast __interp.__customClass.__upperClass;
 							while(cls != null) {
 								if(cls.hasField(name)) 
 									return cls.getField(name);
 								
-								var prev:hscript.CustomClass = cast cls.__upperClass;
+								var prev:hscript.expr.CustomClass = cast cls.__upperClass;
 								if(prev == null)
 									break;
 								cls = prev;
@@ -510,17 +512,17 @@ class ClassExtendMacro {
 						if(__class__fields.contains(name)) {
 							var v:Dynamic = __interp.variables.get(name);
 							var ba:Bool = @:privateAccess __interp.isBypassAccessor;
-							if(v != null && v is hscript.Property) 
-								return cast(v, hscript.Property).get(ba);
+							if(v != null && v is hscript.expr.Property) 
+								return cast(v, hscript.expr.Property).get(ba);
 							return v;
 						}
 						else @:privateAccess {
-							var cls:hscript.CustomClass = cast __interp.__customClass.__upperClass;
+							var cls:hscript.expr.CustomClass = cast __interp.__customClass.__upperClass;
 							while(cls != null) {
 								if(cls.hasField(name)) 
 									return cls.getField(name);
 								
-								var prev:hscript.CustomClass = cast cls.__upperClass;
+								var prev:hscript.expr.CustomClass = cast cls.__upperClass;
 								if(prev == null)
 									break;
 								cls = prev;
@@ -538,18 +540,18 @@ class ClassExtendMacro {
 						if(__class__fields.contains(name)) {
 							var v:Dynamic = __interp.variables.get(name);
 							var ba:Bool = @:privateAccess __interp.isBypassAccessor;
-							if(v != null && v is hscript.Property) 
-								return cast(v, hscript.Property).set(val, ba);
+							if(v != null && v is hscript.expr.Property) 
+								return cast(v, hscript.expr.Property).set(val, ba);
 							__interp.variables.set(name, val);
 							return val;
 						}
 						else @:privateAccess {
-							var cls:hscript.CustomClass = cast __interp.__customClass.__upperClass;
+							var cls:hscript.expr.CustomClass = cast __interp.__customClass.__upperClass;
 							while(cls != null) {
 								if(cls.hasField(name)) 
 									return cls.setField(name, val);
 								
-								var prev:hscript.CustomClass = cast cls.__upperClass;
+								var prev:hscript.expr.CustomClass = cast cls.__upperClass;
 								if(prev == null)
 									break;
 								cls = prev;
@@ -569,18 +571,18 @@ class ClassExtendMacro {
 						if(__class__fields.contains(name)) {
 							var v:Dynamic = __interp.variables.get(name);
 							var ba:Bool = @:privateAccess __interp.isBypassAccessor;
-							if(v != null && v is hscript.Property) 
-								return cast(v, hscript.Property).set(val, ba);
+							if(v != null && v is hscript.expr.Property) 
+								return cast(v, hscript.expr.Property).set(val, ba);
 							__interp.variables.set(name, val);
 							return val;
 						}
 						else @:privateAccess {
-							var cls:hscript.CustomClass = cast __interp.__customClass.__upperClass;
+							var cls:hscript.expr.CustomClass = cast __interp.__customClass.__upperClass;
 							while(cls != null) {
 								if(cls.hasField(name)) 
 									return cls.setField(name, val);
 								
-								var prev:hscript.CustomClass = cast cls.__upperClass;
+								var prev:hscript.expr.CustomClass = cast cls.__upperClass;
 								if(prev == null)
 									break;
 								cls = prev;

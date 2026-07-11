@@ -66,8 +66,8 @@ class UsingHandler {
 		}
 	];
 
-	@:allow(hscript.CustomClass)
-	@:allow(hscript.CustomClassHandler)
+	@:allow(hscript.expr.CustomClass)
+	@:allow(hscript.expr.CustomClassHandler)
 	public var usingEntries(default, null):Map<String, UsingEntry> = [];
 
 	public function new() {}

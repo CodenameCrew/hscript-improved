@@ -1,4 +1,4 @@
-package hscript;
+package hscript.behaviours;
 
 /**
  * Special Interface for handling field access behaviour.

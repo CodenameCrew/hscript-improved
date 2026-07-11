@@ -1,10 +1,16 @@
-package hscript;
+package hscript.expr;
+
+import hscript.behaviours.IHScriptCustomAccessBehaviour;
+import hscript.behaviours.IHScriptCustomConstructor;
+import hscript.behaviours.IHScriptCustomBehaviour;
+import hscript.utils.Tools;
+import hscript.Interp;
 
 /**
  * Provides handlers for static custom class fields and instantiation.
  */
-@:access(hscript.Property)
-class CustomClassHandler implements IHScriptCustomConstructor implements IHScriptCustomAccessBehaviour{
+@:access(hscript.expr.Property)
+class CustomClassHandler implements IHScriptCustomConstructor implements IHScriptCustomAccessBehaviour {
 	public var ogInterp:Interp;
 	public var name:String;
 	public var fields:Array<Expr>;
@@ -146,44 +152,5 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
 
 	public function toString():String {
 		return name;
-	}
-}
-
-
-/**
- * This is for backwards compatibility with old hscript-improved, since some scripts use it
-**/
-@:dox(hide)
-@:keep
-class TemplateClass implements IHScriptCustomBehaviour implements IHScriptCustomAccessBehaviour {
-	public var __interp:Interp;
-	public var __allowSetGet:Bool = true;
-
-	public function hset(name:String, val:Dynamic):Dynamic {
-		var variables = __interp.variables;
-		if(__allowSetGet && variables.exists("set_" + name))
-			return __callSetter(name, val);
-		variables.set(name, val);
-		return val;
-	}
-	public function hget(name:String):Dynamic {
-		var variables = __interp.variables;
-		if(__allowSetGet && variables.exists("get_" + name))
-			return __callGetter(name);
-		return variables.get(name);
-	}
-
-	public function __callGetter(name:String):Dynamic {
-		__allowSetGet = false;
-		var v = __interp.variables.get("get_" + name)();
-		__allowSetGet = true;
-		return v;
-	}
-
-	public function __callSetter(name:String, val:Dynamic):Dynamic {
-		__allowSetGet = false;
-		var v = __interp.variables.get("set_" + name)(val);
-		__allowSetGet = true;
-		return v;
 	}
 }

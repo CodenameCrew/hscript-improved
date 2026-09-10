@@ -1884,8 +1884,6 @@ class Interp {
 
 	static var __behaviourKindCache:ObjectMap<Dynamic, Int> = new ObjectMap<Dynamic, Int>();
 
-	static var __classNameCache:ObjectMap<Dynamic, String> = new ObjectMap<Dynamic, String>();
-
 	static function behaviourKindOf(o:Dynamic):Int {
 		var cls:Null<Class<Dynamic>> = Type.getClass(o);
 		if (cls == null) {
@@ -2091,6 +2089,7 @@ class Interp {
 		if (usingHandler.hasUsingEntries) { // If is not empty
 			var v:Dynamic = null;
 			var clsName:String = o is CustomClassHandler ? cast(o, CustomClassHandler).name : Type.getClassName(Type.getClass(o));
+			// TODO: optimize this
 			if(!usingHandler.entryExists(clsName)) {
 				for (n => us in usingHandler.usingEntries) {
 					if (us.hasField(f)) {

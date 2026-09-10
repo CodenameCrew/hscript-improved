@@ -311,21 +311,21 @@ class Interp {
 		switch (Tools.expr(e1)) {
 			case EIdent(id):
 				var l = locals.get(id);
-				v = applyAssignOp(op, expr(e1), expr(e2));
 				if (l == null) {
+					v = applyAssignOp(op, expr(e1), expr(e2));
 					var r = cachedAssignValue(id, v);
 					if (r != _ASSIGN_FALLBACK) return r;
 					return assignIdentSlow(id, v, true);
 				}
-				else {
-					if (l.r is Property) {
-						var prop:Property = cast l.r;
-						return prop.set(v, isBypassAccessor);
-					}
-					l.r = v;
-					if (l.depth == 0)
-						setVar(id, v);
+				var cur:Dynamic = (l.r is Property) ? (cast l.r:Property).get(isBypassAccessor) : l.r;
+				v = applyAssignOp(op, cur, expr(e2));
+				if (l.r is Property) {
+					var prop:Property = cast l.r;
+					return prop.set(v, isBypassAccessor);
 				}
+				l.r = v;
+				if (l.depth == 0)
+					setVar(id, v);
 			case EField(e, f, s):
 				var obj = expr(e);
 				if(s && obj == null) return null;
@@ -1543,7 +1543,7 @@ class Interp {
 								}
 						}
 					}
-					
+
 					if (match) {
 						val = expr(c.expr);
 						break;
@@ -1884,6 +1884,8 @@ class Interp {
 
 	static var __behaviourKindCache:ObjectMap<Dynamic, Int> = new ObjectMap<Dynamic, Int>();
 
+	static var __classNameCache:ObjectMap<Dynamic, String> = new ObjectMap<Dynamic, String>();
+
 	static function behaviourKindOf(o:Dynamic):Int {
 		var cls:Null<Class<Dynamic>> = Type.getClass(o);
 		if (cls == null) {
@@ -2089,7 +2091,6 @@ class Interp {
 		if (usingHandler.hasUsingEntries) { // If is not empty
 			var v:Dynamic = null;
 			var clsName:String = o is CustomClassHandler ? cast(o, CustomClassHandler).name : Type.getClassName(Type.getClass(o));
-			// TODO: optimize this
 			if(!usingHandler.entryExists(clsName)) {
 				for (n => us in usingHandler.usingEntries) {
 					if (us.hasField(f)) {
@@ -2099,7 +2100,7 @@ class Interp {
 					}
 				}
 			}
-			
+
 		}
 
 		var func = get(o, f);

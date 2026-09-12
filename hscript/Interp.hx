@@ -1854,6 +1854,7 @@ class Interp {
 
 	static final _TYPE_PATH_NEG:{} = {};
 
+	#if hscriptPos
 	function getFieldPathInfo(e:Expr, f:String, node:Expr):Null<{path:String, fullPath:String}> {
 		var info = __fieldPathCache.get(node);
 		if (info != null) return info;

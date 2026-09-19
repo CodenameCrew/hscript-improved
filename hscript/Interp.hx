@@ -1460,7 +1460,7 @@ class Interp {
 					return arr[index];
 				}
 			case ENew(cl, params, _):
-				var a:Array<Dynamic> = (params.length > 0) ? makeArgs(params) : _EMPTY_ARGS;
+				var a:Array<Dynamic> = (params.length > 0) ? makeArgs(params) : [];
 				return cnew(cl, a);
 			case EThrow(e):
 				throw expr(e);

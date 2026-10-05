@@ -2,8 +2,8 @@ package hscript.utils;
 
 @:structInit
 class UsingEntry  {
-	public var call:Dynamic->String->Array<Dynamic>->Dynamic;
-	public var fields:Array<String>;
+	public final call:Dynamic->String->Array<Dynamic>->Dynamic;
+	public final fields:Array<String>;
 
 	public function hasField(name:String) {
 		return fields.contains(name);
@@ -81,5 +81,10 @@ class UsingHandler {
 
 	public inline function entryExists(name:String):Bool {
 		return usingEntries.exists(name);
+	}
+
+	public function clear():Void {
+		usingEntries.clear();
+		hasUsingEntries = false;
 	}
 }

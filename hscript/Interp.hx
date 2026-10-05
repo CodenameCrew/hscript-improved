@@ -143,17 +143,24 @@ class Interp {
 
 	public var errorHandler:Error->Void;
 	public var warnHandler:Error->Void;
-	// TODO: set this callback as a Global Resolver
 	/**
 	 * Custom Import resolver. It's called when an import couldn't be resolved.
 	 */
-	public var importFailedCallback:Array<String>->Null<String>->Bool;
+	public static var importResolver:Array<String> -> Null<String> -> Bool = null;
+	// backwards compatibility
+	public var importFailedCallback(get, never):Array<String>->Null<String>->Bool;
+	private function get_importFailedCallback() {
+		return Interp.importResolver;
+	}
 
 	public var customClasses:Map<String, CustomClassHandler>;
 	public var variables:Map<String, Dynamic>;
 	public var publicVariables:Map<String, Dynamic>;
-	// TODO: maybe turn this completely static
-	public var staticVariables:Map<String, Dynamic>;
+	
+	/**
+	 *	Those are available across the scripts
+	**/
+	public static var staticVariables:Map<String, Dynamic> = [];
 
 	// warning can be null
 	public var locals:Map<String, DeclaredVar>;
@@ -203,7 +210,6 @@ class Interp {
 		customClasses = new Map<String, CustomClassHandler>();
 		variables = new Map<String, Dynamic>();
 		publicVariables = new Map<String, Dynamic>();
-		staticVariables = new Map<String, Dynamic>();
 
 		usingHandler = new UsingHandler();
 		
@@ -2026,7 +2032,7 @@ class Interp {
 		if (c == null)
 			c = resolve(cl);
 		if (c is IHScriptCustomConstructor)
-			return cast(c, IHScriptCustomConstructor).hnew(args);
+			return (cast c:IHScriptCustomConstructor).hnew(args);
 		
 		return Type.createInstance(c, args);
 	}

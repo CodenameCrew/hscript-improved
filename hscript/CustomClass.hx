@@ -39,13 +39,13 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 
 		__interp = new Interp();
 		__interp.errorHandler = __class.__interp.errorHandler;
-		__interp.importFailedCallback = __class.__interp.importFailedCallback;
+		//__interp.importFailedCallback = __class.__interp.importFailedCallback;
 
 		// __interp.variables = __class.staticInterp.variables;
 		@:privateAccess __interp.usingHandler.usingEntries = __class.ogInterp.usingHandler.usingEntries;
 		@:privateAccess __interp.usingHandler.hasUsingEntries = __class.ogInterp.usingHandler.hasUsingEntries;
 		__interp.publicVariables = __class.ogInterp.publicVariables;
-		__interp.staticVariables = __class.ogInterp.staticVariables;
+		//__interp.staticVariables = __class.ogInterp.staticVariables;
 		__interp.customClasses = __class.ogInterp.customClasses;
 
 		for(f => v in __class.__interp.variables) {

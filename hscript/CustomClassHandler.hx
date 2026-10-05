@@ -48,13 +48,13 @@ class CustomClassHandler implements IHScriptCustomConstructor implements IHScrip
 	function initStatic() {
 		__interp = new Interp();
 		__interp.errorHandler = ogInterp.errorHandler;
-		__interp.importFailedCallback = ogInterp.importFailedCallback;
+		//__interp.importFailedCallback = ogInterp.importFailedCallback;
 
 		//__interp.variables = ogInterp.variables;
 		__interp.usingHandler.usingEntries = ogInterp.usingHandler.usingEntries;
 		__interp.usingHandler.hasUsingEntries = ogInterp.usingHandler.hasUsingEntries;
 		__interp.publicVariables = ogInterp.publicVariables;
-		__interp.staticVariables = ogInterp.staticVariables;
+		//__interp.staticVariables = ogInterp.staticVariables;
 		__interp.customClasses = ogInterp.customClasses;
 
 		for(f => v in ogInterp.variables) 

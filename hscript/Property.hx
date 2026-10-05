@@ -154,7 +154,7 @@ class Property {
 	}
 
 	private function callAccessor(f:String, isWrite:Bool = false, ?value:Dynamic):Dynamic {
-		var fn = isStatic ? interp.staticVariables.get(f) : interp.variables.get(f);
+		var fn = isStatic ? Interp.staticVariables.get(f) : interp.variables.get(f);
 		var rt:Dynamic = null;
 		if (fn != null && Reflect.isFunction(fn)) {
 			if (isWrite) __allowWriteAccess = true;
@@ -173,6 +173,6 @@ class Property {
 	}
 
 	private inline function varExists(n:String) {
-		return isStatic ? interp.staticVariables.exists(n) : interp.variables.exists(n);
+		return isStatic ? Interp.staticVariables.exists(n) : interp.variables.exists(n);
 	}
 }

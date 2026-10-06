@@ -162,6 +162,8 @@ class Interp {
 	**/
 	public static var staticVariables:Map<String, Dynamic> = [];
 
+	public static inline function resetStaticVariables():Void {staticVariables.clear();}
+
 	// warning can be null
 	public var locals:Map<String, DeclaredVar>;
 
@@ -684,6 +686,8 @@ class Interp {
 		return h2;
 	}
 
+	inline function store():Int {return declared.length;}
+
 	inline function restore(old:Int):Void {
 		while (declared.length > old) {
 			var d = declared.pop();
@@ -1192,7 +1196,7 @@ class Interp {
 			case EParent(e):
 				return expr(e);
 			case EBlock(exprs):
-				var old:Int = declared.length;
+				var old:Int = store();
 				var v:Null<Dynamic> = null;
 				for (e in exprs)
 					v = expr(e);
@@ -1319,14 +1323,14 @@ class Interp {
 						hasCaptured = true;
 					}
 
-				var me = this;
+				var me:Interp = this;
 				var hasOpt = false, minParams = 0;
 				for (p in params)
 					if (p.opt)
 						hasOpt = true;
 					else
 						minParams++;
-				var f = function(args:Array<Dynamic>) {
+				var staticFunction = function(args:Array<Dynamic>):Null<Dynamic> {
 					if (me.locals == null || me.variables == null) return null;
 
 					if (((args == null) ? 0 : args.length) != params.length) {
@@ -1337,7 +1341,7 @@ class Interp {
 							error(ECustom(str));
 						}
 						// make sure mandatory args are forced
-						var args2 = [];
+						var args2:Array<Dynamic> = [];
 						var extraParams = args.length - minParams;
 						var pos = 0;
 						for (p in params)
@@ -1357,11 +1361,12 @@ class Interp {
 					for (i in 0...params.length)
 						me.locals.set(params[i].name, {r: args[i], depth: depth});
 					var r:Null<Dynamic> = null;
-					var oldDecl:Int = declared.length;
+					var oldDecl:Int = store();
 					if (inTry)
 						try {
 							r = me.exprReturn(fexpr);
 						} catch (e:Dynamic) {
+							restore(oldDecl);
 							me.locals = old;
 							me.depth = depth;
 							#if neko
@@ -1377,7 +1382,7 @@ class Interp {
 					me.depth = depth;
 					return r;
 				};
-				var f = Reflect.makeVarArgs(f);
+				var f:Dynamic = Reflect.makeVarArgs(staticFunction);
 				if (name != null) {
 					if (depth == 0) {
 						// global function
@@ -1497,7 +1502,7 @@ class Interp {
 			case EThrow(e):
 				throw expr(e);
 			case ETry(e, n, _, ecatch):
-				var old:Int = declared.length;
+				var old:Int = store();
 				var oldTry = inTry;
 				try {
 					inTry = true;
@@ -1527,7 +1532,7 @@ class Interp {
 			case ETernary(econd, e1, e2):
 				return if (expr(econd) == true) expr(e1) else expr(e2);
 			case ESwitch(e, cases, def):
-				var old:Int = declared.length;
+				var old:Int = store();
 				var val:Dynamic = expr(e);
 				var match = false;
 				for (c in cases) {
@@ -1601,7 +1606,7 @@ class Interp {
 	}
 
 	inline function doWhileLoop(econd:Expr, e:Expr):Void {
-		var old = declared.length;
+		var old = store();
 		do {
 			if (!loopBody(e))
 				break;
@@ -1610,7 +1615,7 @@ class Interp {
 	}
 
 	inline function whileLoop(econd:Expr, e:Expr):Void {
-		var old = declared.length;
+		var old = store();
 		while (expr(econd) == true) {
 			if (!loopBody(e))
 				break;
@@ -1720,7 +1725,7 @@ class Interp {
 
 	inline function forLoop(n:String, it:Expr, e:Expr, ?ithv:String):Void {
 		var isKeyValue = ithv != null;
-		var old = declared.length;
+		var old = store();
 		if(isKeyValue)
 			declared.push({n: ithv, old: locals.get(ithv), depth: depth});
 		declared.push({n: n, old: locals.get(n), depth: depth});

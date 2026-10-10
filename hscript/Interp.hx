@@ -571,8 +571,8 @@ class Interp {
 
 	public function execute(expr:Expr):Dynamic {
 		depth = 0;
-		locals = new Map();
-		declared = [];
+		(locals ??= new Map()).clear();
+		(declared ??= []).resize(0);
 		return exprReturn(expr);
 	}
 
@@ -663,10 +663,8 @@ class Interp {
 	}
 
 	inline function getProperty(o:Null<Dynamic>, n:String, allowProperty:Bool = true):Dynamic {
-		if(allowProperty && o != null && o is Property) {
-			var prop:Property = cast o;
-			return prop.get(isBypassAccessor);
-		}
+		if(allowProperty && o != null && o is Property) 
+			return (cast o:Property).get(isBypassAccessor);
 		else
 			return o;
 	}
@@ -1106,7 +1104,11 @@ class Interp {
 					error(ECustom("Property Accessor for local variables is not allowed"));
 					return null;
 				}
-				declared.push({n: n, old: locals.get(n), depth: depth});
+				declared.push({
+					n: n, 
+					old: locals.get(n), 
+					depth: depth
+				});
 				var v:Dynamic = (e == null) ? null : expr(e);
 				var r:Dynamic = null;
 				if (hasGetSet) 

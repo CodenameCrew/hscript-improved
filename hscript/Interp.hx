@@ -46,7 +46,24 @@ private enum Stop {
 class Interp {
 	public var scriptObject(default, set):Dynamic;
 	public function set_scriptObject(v:Dynamic) {
-		__instanceFields = (v == null) ? [] : Type.getInstanceFields(Type.getClass(v));
+		if (v == null) {
+			__instanceFields = [];
+			__instanceFieldsMap = null;
+			__scriptObjectClassName = null;
+			__scriptObjectIsObject = false;
+		} else {
+			var c = Type.getClass(v);
+			__instanceFields = Type.getInstanceFields(c);
+			var m = new Map();
+			__scriptObjectClassName = Type.getClassName(c);
+			for (f in __instanceFields) {
+				m.set(f, true);
+				m.set("get_" + f, true);
+				m.set("set_" + f, true);
+			}
+			__instanceFieldsMap = m;
+			__scriptObjectIsObject = Type.typeof(v) == TObject;
+		}
 		return scriptObject = v;
 	}
 	public var errorHandler:Error->Void;
@@ -86,6 +103,9 @@ class Interp {
 	];
 
 	var __instanceFields:Array<String> = [];
+	var __instanceFieldsMap:Map<String,Bool>;
+	var __scriptObjectClassName:String;
+	var __scriptObjectIsObject:Bool;
 	#if hscriptPos
 	var curExpr:Expr;
 	#end
@@ -444,27 +464,34 @@ class Interp {
 	public function resolve(id:String, doException:Bool = true):Dynamic {
 		if (id == null)
 			return null;
-		id = StringTools.trim(id);
+		if (id.indexOf(" ") >= 0) id = StringTools.trim(id);
 		var l = locals.get(id);
 		if (l != null)
 			return l.r;
 
 		var v = variables.get(id);
-		for(map in [variables, publicVariables, staticVariables, customClasses])
-			if (map.exists(id))
-				return map[id];
+		if (v != null)
+			return v;
+		if (publicVariables.exists(id))
+			return publicVariables.get(id);
+		if (staticVariables.exists(id))
+			return staticVariables.get(id);
+		if (customClasses.exists(id))
+			return customClasses.get(id);
 
 		if (scriptObject != null) {
 			// search in object
 			if (id == "this") {
 				return scriptObject;
-			} else if ((Type.typeof(scriptObject) == TObject) && Reflect.hasField(scriptObject, id)) {
+			} else if (__scriptObjectIsObject && Reflect.hasField(scriptObject, id)) {
 				return Reflect.field(scriptObject, id);
 			} else {
-				if (__instanceFields.contains(id)) {
-					return Reflect.getProperty(scriptObject, id);
-				} else if (__instanceFields.contains('get_$id')) { // getter
-					return Reflect.getProperty(scriptObject, 'get_$id')();
+				if (__instanceFieldsMap != null) {
+					if (__instanceFieldsMap.exists(id)) {
+						return Reflect.getProperty(scriptObject, id);
+					} else if (__instanceFieldsMap.exists("get_" + id)) { // getter
+						return Reflect.getProperty(scriptObject, "get_" + id)();
+					}
 				}
 			}
 		}
@@ -964,11 +991,16 @@ class Interp {
 			declared.push({n: ithv, old: locals.get(ithv), depth: depth});
 		declared.push({n: n, old: locals.get(n), depth: depth});
 		var it = makeIterator(expr(it), isKeyValue);
+		var refN = {r: null, depth: depth};
+		var refK:Null<{r:Dynamic, depth:Int}> = if(isKeyValue) {r: null, depth: depth} else null;
 		while (it.hasNext()) {
 			var next = it.next();
-			if(isKeyValue)
-				locals.set(ithv, {r: next.key, depth: depth});
-			locals.set(n, {r: isKeyValue ? next.value : next, depth: depth});
+			if(isKeyValue) {
+				refK.r = next.key;
+				locals.set(ithv, refK);
+			}
+			refN.r = isKeyValue ? next.value : next;
+			locals.set(n, refN);
 			try {
 				expr(e);
 			} catch (err:Stop) {

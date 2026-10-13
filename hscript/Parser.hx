@@ -2197,6 +2197,8 @@ class Parser {
 						}
 						if( pow == null )
 							invalidChar(char);
+						if( exp == 0 )
+							exp = 10;
 						return TConst(CFloat((Math.pow(10, pow) / exp) * n * 10));
 					case ".".code:
 						if( exp > 0 ) {
@@ -2250,7 +2252,8 @@ class Parser {
 						}
 					default:
 						this.char = char;
-						return TConst( (exp > 0) ? CFloat(n * 10 / exp) : ((n % 1 == 0) ? CInt(Std.int(n)) : CFloat(n)) );
+						var i = Std.int(n);
+						return TConst( (exp > 0) ? CFloat(n * 10 / exp) : ((i == n) ? CInt(i) : CFloat(n)) );
 					}
 				}
 			case ";".code: return TSemicolon;

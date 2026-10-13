@@ -22,8 +22,8 @@ class TestHScript extends TestCase {
 		var pr = new hscript.Printer();
 		var program = p.parseString(x);
 		trace('Raw: ${pr.exprToString(program)}');
-		var bytes = hscript.Bytes.encode(program);
-		program = hscript.Bytes.decode(bytes);
+		var bytes = hscript.Bytes.encode(program, allowTypes);
+		program = hscript.Bytes.decode(bytes, allowTypes);
 		trace('Decoded: ${pr.exprToString(program)}');
 		trace('----------------------------------------');
 		var interp = new hscript.Interp();

@@ -670,14 +670,16 @@ class Bytes {
 		}
 	}
 
-	public static function encode( e : Expr ) : haxe.io.Bytes {
+	public static function encode( e : Expr, allowTypes:Bool = false ) : haxe.io.Bytes {
 		var b = new Bytes();
+		b.storeTypes = allowTypes;
 		b.doEncode(e);
 		return b.bout.getBytes();
 	}
 
-	public static function decode( bytes : haxe.io.Bytes ) : Expr {
+	public static function decode( bytes : haxe.io.Bytes, allowTypes:Bool = false ) : Expr {
 		var b = new Bytes(bytes);
+		b.storeTypes = allowTypes;
 		return b.doDecode();
 	}
 

@@ -212,6 +212,8 @@ class Interp {
 
 		usingHandler = new UsingHandler();
 		
+		// use those as constants rather than custom variables
+		// it will reduce the lookup overhead if passed directly
 		variables.set("null", null);
 		variables.set("true", true);
 		variables.set("false", false);

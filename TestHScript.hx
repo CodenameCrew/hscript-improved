@@ -54,7 +54,7 @@ class TestHScript extends TestCase {
 			success = true;
 		}
 		catch(e:hscript.Expr.Error) {
-			trace('Error: ${e.toString()}');
+			trace('Error: ${Printer.errorToString(e)}');
 		}
 		assertTrue(success, pos);
 	}

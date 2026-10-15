@@ -8,7 +8,7 @@ on:
       - 'overhaul/**'
       - 'update/**'
       # exclude
-      - !master
+      - '!master'
       - '!custom-classes'
       - '!testing'
       - '!overflow'

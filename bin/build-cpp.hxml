@@ -1,2 +1,2 @@
 bin/build-each.hxml
--cpp bin
+-cpp bin/cpp

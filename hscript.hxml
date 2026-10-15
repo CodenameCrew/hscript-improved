@@ -1,3 +1,4 @@
-bin/build-each.hxml
--hl bin/Test.hl
+# bin/build-each.hxml
+# -hl bin/Test.hl
+bin/build-cpp.hxml
 -D hscriptPos

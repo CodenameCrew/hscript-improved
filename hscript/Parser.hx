@@ -406,7 +406,7 @@ class Parser {
 					tk = token();
 					switch( tk ) {
 						case TPClose:
-							return parseExprNext(mk(ECheckType(e,t),p1,tokenMax));
+							return parseExprNext(mk(ECheckType(e,t),p1,tokenMax)); // TODO: type promotion with "cast", ex: (cast value:String)
 						case TComma:
 							switch( expr(e) ) {
 								case EIdent(v): return parseLambda([{ name : v, t : t, opt: false, value: null }], pmin(e));

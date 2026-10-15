@@ -26,7 +26,7 @@ jobs:
     - name: Pulling the new commit
       uses: actions/checkout@v7
     - name: Setting up Haxe
-    - uses: krdlab/setup-haxe@v2
+      uses: krdlab/setup-haxe@v2
       with:
         haxe-version: ${{ env.HAXE_VERSION }}
     - name: Install haxelib dependencies

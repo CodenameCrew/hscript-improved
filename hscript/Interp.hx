@@ -984,23 +984,21 @@ class Interp {
 		return v;
 	}
 
-	function forLoop(n, it, e, ?ithv) {
+	function forLoop(n, _it, e, ?ithv) {
 		var isKeyValue = ithv != null;
 		var old = declared.length;
 		if(isKeyValue)
 			declared.push({n: ithv, old: locals.get(ithv), depth: depth});
 		declared.push({n: n, old: locals.get(n), depth: depth});
-		var it = makeIterator(expr(it), isKeyValue);
-		var refN = {r: null, depth: depth};
-		var refK:Null<{r:Dynamic, depth:Int}> = if(isKeyValue) {r: null, depth: depth} else null;
+		var it:Iterator<Dynamic> = makeIterator(expr(_it), isKeyValue);
 		while (it.hasNext()) {
-			var next = it.next();
+			var next:Dynamic = it.next();
 			if(isKeyValue) {
-				refK.r = next.key;
-				locals.set(ithv, refK);
+				locals.set(ithv, {r: next.key, depth: depth});
+				locals.set(n, {r: next.value, depth: depth});
+			} else {
+				locals.set(n, {r: next, depth: depth});
 			}
-			refN.r = isKeyValue ? next.value : next;
-			locals.set(n, refN);
 			try {
 				expr(e);
 			} catch (err:Stop) {

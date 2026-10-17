@@ -42,17 +42,17 @@ jobs:
       run: |
         haxe bin/build-neko.hxml               && neko bin/Test.n
         haxe bin/build-neko.hxml -D hscriptPos && neko bin/Test.n
-    # - name: Test js
+    - name: Test js
+      run: |
+        haxe bin/build-js.hxml               && node bin/Test.js
+        haxe bin/build-js.hxml -D hscriptPos && node bin/Test.js
+    # - name: Build hashlink from source
     #   run: |
-    #     haxe bin/build-js.hxml               && node bin/Test.js
-    #     haxe bin/build-js.hxml -D hscriptPos && node bin/Test.js
-    - name: Build hashlink from source
-      run: |
-        git clone https://github.com/HaxeFoundation/hashlink.git
-        cd hashlink
-        make hl
-        cd ..
-    - name: Test hl
-      run: |
-        haxe bin/build-hl.hxml               && ./hashlink/hl bin/Test.hl
-        haxe bin/build-hl.hxml -D hscriptPos && ./hashlink/hl bin/Test.hl
+    #     git clone https://github.com/HaxeFoundation/hashlink.git
+    #     cd hashlink
+    #     make hl
+    #     cd ..
+    # - name: Test hl
+    #   run: |
+    #     haxe bin/build-hl.hxml               && ./hashlink/hl bin/Test.hl
+    #     haxe bin/build-hl.hxml -D hscriptPos && ./hashlink/hl bin/Test.hl

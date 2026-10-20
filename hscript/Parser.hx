@@ -1402,6 +1402,25 @@ class Parser {
 				var tmp = "__a_" + (uid++);
 				push(TDot);
 				var e2 = parseExprNext(mk(EIdent(tmp),pmin(e1),pmax(e1)), true);
+				var tk2 = token();
+				switch( tk2 ) {
+					case TOp(op):
+						var bop = Binop.fromString(op);
+						var isAssign = switch( bop ) {
+							case OpAssign | OpAddAssign | OpSubAssign | OpMultAssign | OpDivAssign | OpModAssign | OpAndAssign | OpOrAssign | OpXorAssign | OpShlAssign | OpShrAssign | OpUshrAssign | OpNcoalAssign: true;
+							default: false;
+						};
+						if( isAssign ) {
+							var rhs = parseExpr();
+							e2 = mk(EBinop(bop, e2, rhs), pmin(e2), pmax(rhs));
+						} else if( op == "++" || op == "--" ) {
+							e2 = mk(EUnop(Unop.fromString(op), false, e2), pmin(e2), pmax(e2));
+						} else {
+							push(tk2);
+						}
+					default:
+						push(tk2);
+				}
 				var e = mk(EBlock([
 					mk(EVar(tmp, null, e1), pmin(e1), pmax(e1)),
 					mk(ETernary(

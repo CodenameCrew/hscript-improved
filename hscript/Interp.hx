@@ -1558,8 +1558,13 @@ class Interp {
 
 				isBypassAccessor = oldAccessor;
 				return val;
-			case ECheckType(e, _), ECast(e, _):
+			case ECheckType(e, _): 
 				return expr(e);
+			case ECast(e, _): // TODO: runtime explicit cast check
+				var v = expr(e);
+				if(v is CustomClass && (cast v:CustomClass).hasSuperClass)
+					v = (cast v:CustomClass).getSuperclass();
+				return v;
 		}
 		return null;
 	}
@@ -1665,18 +1670,11 @@ class Interp {
 		untyped __cpp__('{0}->reserve({1}->length)', args, params);
 		#end
 		for (p in params) {
-			switch (Tools.expr(p)) {
-				case EIdent(id):
-					var ident:Dynamic = resolve(id);
-					if (ident is CustomClass) {
-						var customClass:CustomClass = cast ident; // Pass the underlying superclass if exist
-						args.push(customClass.__superClass != null ? customClass.getSuperclass() : customClass);
-					} else {
-						args.push(ident);
-					}
-				default:
-					args.push(expr(p));
+			var v:Dynamic = expr(p);
+			if(v is CustomClass && (cast v:CustomClass).hasSuperClass) {
+				v = (cast v:CustomClass).getSuperclass();
 			}
+			args.push(v);
 		}
 
 		return args;
@@ -2065,20 +2063,20 @@ class Interp {
 			var superCls:Dynamic = scriptObject.__superClass;
 			if (o == superCls) {
 				if (superCls is CustomClass)
-					return cast(superCls, CustomClass).call(f, args, true);
+					return (cast superCls:CustomClass).call(f, args, true);
 				else
 					return UnsafeReflect.callMethodUnsafe(superCls, UnsafeReflect.field(superCls, '_HX_SUPER__$f'), args);
 			}
 			if (superCls is CustomClass) {
-				superCls = cast(superCls, CustomClass).__superClass;
+				superCls = (cast superCls:CustomClass).__superClass;
 				while (superCls != null) {
 					if (o == superCls) {
 						if (superCls is CustomClass)
-							return cast(superCls, CustomClass).call(f, args, true);
+							return (cast superCls:CustomClass).call(f, args, true);
 						else
 							return UnsafeReflect.callMethodUnsafe(superCls, UnsafeReflect.field(superCls, '_HX_SUPER__$f'), args);
 					}
-					superCls = (superCls is CustomClass) ? cast(superCls, CustomClass).__superClass : null;
+					superCls = (superCls is CustomClass) ? (cast superCls:CustomClass).__superClass : null;
 				}
 			}
 		}

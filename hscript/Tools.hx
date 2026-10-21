@@ -104,7 +104,7 @@ class Tools {
 		#end
 	}
 
-	public static inline function mk( e : ExprDef, p : Expr ):Expr {
+	@:noUsing public static inline function mk( e : ExprDef, p : Expr ):Expr {
 		#if hscriptPos
 		return { e : e, pmin : p.pmin, pmax : p.pmax, origin : p.origin, line : p.line };
 		#else
@@ -115,7 +115,7 @@ class Tools {
 	/**
 	 * DO NOT USE INLINE ON THIS FUNCTION
 	**/
-	public static function argCount(func: haxe.Constraints.Function): Int {
+	@:noUsing public static function argCount(func: haxe.Constraints.Function): Int {
 		// https://github.com/pisayesiwsi/hscript-iris/blob/dev/crowplexus/hscript/Tools.hx#L206
 		#if cpp
 		return untyped __cpp__("{0}->__ArgCount()", func);

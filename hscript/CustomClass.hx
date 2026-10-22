@@ -25,6 +25,8 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 
 	public var __allowSetGet:Bool = true;
 
+	public var hasSuperClass(get, never):Bool;
+
 	var __class:CustomClassHandler;
 	var __superClass:IHScriptCustomClassBehaviour;
 	var __upperClass:Null<IHScriptCustomClassBehaviour>; // top class
@@ -303,6 +305,10 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 			+ (__superClass != null ? "' or super class '" + Type.getClassName(Type.getClass(this.__superClass)) + "'" : "");
 
 		return null;
+	}
+
+	private inline function get_hasSuperClass():Bool {
+		return __superClass != null;
 	}
 
 	// UNUSED

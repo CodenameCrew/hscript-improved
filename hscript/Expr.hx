@@ -214,7 +214,7 @@ enum Expr {
 	EVar( n : String, ?t : CType, ?e : Expr, ?isPublic : Bool, ?isStatic : Bool, ?isPrivate : Bool, ?isFinal : Bool, ?isInline : Bool, ?get : FieldPropertyAccess, ?set : FieldPropertyAccess, ?isVar:Bool );
 	EParent( e : Expr );
 	EBlock( e : Array<Expr> );
-	EField( e : Expr, f : String );
+	EField( e : Expr, f : String , ?safe : Bool );
 	EBinop( op : Binop, e1 : Expr, e2 : Expr );
 	EUnop( op : Unop, prefix : Bool, e : Expr );
 	ECall( e : Expr, params : Array<Expr> );

@@ -289,8 +289,10 @@ class Interp {
 					if (l.depth == 0)
 						setVar(id, v);
 				}
-			case EField(e, f):
-				v = set(expr(e), f, v);
+			case EField(e, f, s):
+				var obj = expr(e);
+				if(s && obj == null) return null;
+				v = set(obj, f, v);
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
@@ -326,8 +328,9 @@ class Interp {
 				l.r = v;
 				if (l.depth == 0)
 					setVar(id, v);
-			case EField(e, f):
+			case EField(e, f, s):
 				var obj = expr(e);
+				if(s && obj == null) return null;
 				v = applyAssignOp(op, get(obj, f), expr(e2));
 				v = set(obj, f, v);
 			case EArray(e, index):
@@ -530,8 +533,9 @@ class Interp {
 					}
 					return v;
 				}
-			case EField(e, f):
+			case EField(e, f, s):
 				var obj = expr(e);
+				if(s && obj == null) return null;
 				var v:Dynamic = get(obj, f);
 				if (prefix) {
 					v += delta;
@@ -1139,7 +1143,7 @@ class Interp {
 					v = expr(e);
 				restore(old);
 				return v;
-			case EField(e, f):
+			case EField(e, f, s):
 				#if hscriptPos
 				var fieldNode = curExpr; // the EField node itself; curExpr moves on while expr(e) runs
 				#else
@@ -1153,6 +1157,7 @@ class Interp {
 					if(info != null) {
 						var cl = resolveFieldTypeCached(info.fullPath);
 						if(cl != null) return cl;
+						if(s) return null;
 						error(EUnknownVariable(info.path));
 					}
 					throw exc;
@@ -1163,6 +1168,7 @@ class Interp {
 						var cl = resolveFieldTypeCached(info.fullPath);
 						if(cl != null) return cl;
 					}
+					if(s) return null;
 				}
 				return get(field, f);
 			case EBinop(op, e1, e2):
@@ -1220,10 +1226,12 @@ class Interp {
 				var args:Array<Dynamic> = (params.length > 0) ? makeArgs(params) : _EMPTY_ARGS;
 
 				switch (Tools.expr(e)) {
-					case EField(e, f):
+					case EField(e, f, s):
 						var obj:Null<Dynamic> = expr(e);
-						if (obj == null) 
+						if (obj == null) {
+							if(s) return null;
 							error(EInvalidAccess(f));
+						}
 						return fcall(obj, f, args);
 					default:
 						return call(null, expr(e), args);
@@ -1761,7 +1769,7 @@ class Interp {
 			case EBlock(exprs) | EArrayDecl(exprs, _):
 				for (x in exprs) if (walkHasFunctionLiteral(x)) return true;
 				false;
-			case EField(x, _) | EArray(x, _): walkHasFunctionLiteral(x);
+			case EField(x, _, _) | EArray(x, _): walkHasFunctionLiteral(x);
 			case EBinop(_, e1, e2): walkHasFunctionLiteral(e1) || walkHasFunctionLiteral(e2);
 			case ECall(x, params):
 				if (walkHasFunctionLiteral(x)) return true;
@@ -1836,7 +1844,7 @@ class Interp {
 		switch(Tools.expr(e)) {
 			case EIdent(id):
 				return id;
-			case EField(e2, f):
+			case EField(e2, f, _):
 				var parent = getExprPath(e2);
 				if(parent != null)
 					return parent + "." + f;

@@ -261,9 +261,10 @@ class Bytes {
 			bout.addByte(el.length);
 			for( e in el )
 				doEncode(e);
-		case EField(e,f):
+		case EField(e,f,s):
 			doEncode(e);
 			doEncodeString(f);
+			doEncodeBoolean(s ?? false);
 		case EBinop(op,e1,e2):
 			doEncodeBinop(op);
 			doEncode(e1);
@@ -475,7 +476,8 @@ class Bytes {
 		case BFIELD:
 			final e = doDecode();
 			final f = doDecodeString();
-			EField(e,f);
+			final s = doDecodeBoolean();
+			EField(e,f,s);
 		case BBINOP:
 			var op = doDecodeBinop();
 			var e1 = doDecode();

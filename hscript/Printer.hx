@@ -271,10 +271,9 @@ class Printer {
 				tabs = tabs.substr(1);
 				add("}");
 			}
-		case EField(e, f):
+		case EField(e, f, s):
 			expr(e);
-			add("." + f);
-			//add((s == true ? "?." : ".") + f);
+			add((s == true ? "?." : ".") + f);
 		case EBinop(op, e1, e2):
 			expr(e1);
 			add(" " + op.toString() + " ");

@@ -175,7 +175,7 @@ class Parser {
 
 	function initParser( origin:String ) {
 		// line=1 - don't reset line : it might be set manualy
-		preprocStack = [];
+		(preprocStack ??= []).resize(0);
 		disableOrOp = false;
 		isVar = false;
 		#if hscriptPos
@@ -188,8 +188,8 @@ class Parser {
 		tokens = new haxe.ds.GenericStack<Token>();
 		#end
 		char = -1;
-		ops = [];
-		idents = [];
+		(ops ??= []).resize(0);
+		(idents ??= []).resize(0);
 		uid = 0;
 		for( i in 0...opChars.length )
 			ops[opChars.charCodeAt(i)] = true;
@@ -199,10 +199,10 @@ class Parser {
 
 	public function parseString( s : String, ?origin : String = "hscript" ):Expr {
 		initParser(origin);
-		if(s == "") s = "0;"; // fixing crash with empty file
+		if(s.trim().length == 0) s = "0;"; // fixing crash with empty file
 		input = s;
 		readPos = 0;
-		var a = [];
+		final a:Array<Expr> = [];
 		while( true ) {
 			var tk = token();
 			if( tk == TEof ) break;

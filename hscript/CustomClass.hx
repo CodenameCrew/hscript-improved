@@ -57,14 +57,18 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 		}
 
 		for (f in __class.fields) {
+			var nf:Null<String> = null;
 			switch (Tools.expr(f)) {
 				case EVar(n): __class__fields.push(n);
 				case EFunction(_, _, n, _, _, _, isOverride): 
 					if(isOverride) __overrideFields.push(n);
 					__class__fields.push(n);
+					nf = n;
 				default: continue;
 			}
 			@:privateAccess __interp.exprReturn(f);
+			if (nf != null)
+				@:privateAccess __interp.varLocationCache.set(nf, VCustomClass);
 		}
 
 		__interp.scriptObject = this;
@@ -247,11 +251,31 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 		return [for(f in classFields) f];
 	}
 
+	private function getUpperClass():IHScriptCustomClassBehaviour {
+        var cls:IHScriptCustomClassBehaviour = this;
+        while (true) {
+            var upper:IHScriptCustomClassBehaviour = @:privateAccess cast(cls, CustomClass).__upperClass;
+            if (upper == null || !(upper is CustomClass)) break;
+            cls = upper;
+        }
+        return cls;
+    }
+
 	public function hget(name:String):Dynamic {
 		switch (name) {
 			case 'superClass': return __superClass;
 			case 'superConstructor': return __constructor;
 			default:
+				// very necessary if we want overrides to work properly
+                if (!StringTools.startsWith(name, "_HX_SUPER__")) {
+                    var upper = getUpperClass();
+                    if (upper != this && upper is CustomClass) {
+						var upper:CustomClass = cast upper;
+                        if (upper.hasField(name))
+                            return upper.hget(name);
+                    }
+                }
+
 				if (hasField(name))
 					return getField(name);
 

@@ -32,8 +32,12 @@ jobs:
     - name: Install haxelib dependencies
       run: |
         haxelib --global update haxelib
+        haxelib newrepo
         haxelib install hx3compat
         haxelib git hxcpp https://github.com/CodenameCrew/cne-hxcpp.git
+        cd .haxelib/hxcpp/git/tools/hxcpp
+        haxe compile.hxml
+        cd ../../../../..
         haxelib dev hscript .
     - name: Test interp
       run: |

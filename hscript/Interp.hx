@@ -1566,14 +1566,17 @@ class Interp {
 					val = def == null ? null : expr(def);
 				restore(old);
 				return val;
-			case EMeta(a, b, e):
-				var oldAccessor = isBypassAccessor;
-				if(a == ":bypassAccessor") {
-					isBypassAccessor = true;
+			case EMeta(n, a, e):
+				var val:Dynamic = null;
+				switch(n) {
+					case ":bypassAccessor":
+						final oldAccessor:Bool = isBypassAccessor;
+						isBypassAccessor = true;
+						val = expr(e);
+						isBypassAccessor = oldAccessor;
+					default:
+						val = expr(e);
 				}
-				var val = expr(e);
-
-				isBypassAccessor = oldAccessor;
 				return val;
 			case ECheckType(e, _): 
 				return expr(e);

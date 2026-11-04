@@ -49,8 +49,8 @@ jobs:
         haxe bin/build-js.hxml -D hscriptPos && node bin/Test.js
     - name: Test C++ (linux)
       run: |
-        haxe bin/build-cpp.hxml -D HXCPP_CHECK_POINTER -D HXCPP_STACK_LINE               && cd bin/cpp && ./TestHScript
-        haxe bin/build-cpp.hxml -D HXCPP_CHECK_POINTER -D HXCPP_STACK_LINE -D hscriptPos && cd bin/cpp && ./TestHScript
+        haxe bin/build-cpp.hxml -D HXCPP_CHECK_POINTER -D HXCPP_STACK_LINE               && ./bin/cpp/TestHScript
+        haxe bin/build-cpp.hxml -D HXCPP_CHECK_POINTER -D HXCPP_STACK_LINE -D hscriptPos && ./bin/cpp/TestHScript
     # - name: Build hashlink from source
     #   run: |
     #     git clone https://github.com/HaxeFoundation/hashlink.git

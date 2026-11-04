@@ -33,7 +33,7 @@ jobs:
       run: |
         haxelib --global update haxelib
         haxelib install hx3compat
-        haxelib install hxcpp
+        haxelib git hxcpp https://github.com/CodenameCrew/cne-hxcpp.git
         haxelib dev hscript .
     - name: Test interp
       run: |

@@ -362,6 +362,14 @@ class Bytes {
 				for( v in c.values )
 					doEncode(v);
 				bout.addByte(255);
+
+				doEncodeBoolean(c.hasGuard);
+				if(c.hasGuard)
+					doEncode(c.guard);
+				else
+					doEncodeNull();
+
+				//bout.addByte(255);
 				doEncode(c.expr);
 			}
 			bout.addByte(255);
@@ -566,20 +574,22 @@ class Bytes {
 			var e2 = doDecode();
 			ETernary(cond, e1, e2);
 		case BSWITCH:
-			var e = doDecode();
-			var cases:Array<SwitchCase> = [];
+			final e = doDecode();
+			final cases:Array<SwitchCase> = [];
 			while( true ) {
 				var v = doDecode();
 				if( v == null ) break;
-				var values = [v];
+				final values = [v];
 				while( true ) {
 					v = doDecode();
 					if( v == null ) break;
 					values.push(v);
 				}
-				cases.push( { values : values, expr : doDecode() } );
+				final hasGuard:Bool = doDecodeBoolean();
+				final guardExpr:Expr = doDecode();
+				cases.push( { values : values, expr : doDecode(), guard: guardExpr, hasGuard: hasGuard } );
 			}
-			var def = doDecode();
+			final def:Null<Expr> = doDecode();
 			ESwitch(e, cases, def);
 		case BDOWHILE:
 			var cond = doDecode();

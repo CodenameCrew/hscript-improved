@@ -834,6 +834,7 @@ class Interp {
 	}
 
 	/** Handles `class Foo { ... }` declarations (extracted from the expr() switch). **/
+	@:noInline
 	function exprClass(name:String, fields:Array<Expr>, extend:String, interfaces:Array<String>, isFinal:Bool):Void {
 		// TODO: module isolation
 		var oldName:String = name;
@@ -865,6 +866,7 @@ class Interp {
 	}
 
 	/** Handles `import` / `using` statements (extracted from the expr() switch). **/
+	@:noInline
 	function exprImport(clsName:String, aliasAs:Null<String>, isUsing:Bool):Void {
 		if(!importEnabled) return;
 
@@ -976,6 +978,7 @@ class Interp {
 	}
 
 	/** Handles `enum` declarations (extracted from the expr() switch). **/
+	@:noInline
 	function exprEnum(en:EnumDecl, isAbstract:Bool):Void {
 		if(isAbstract) {
 			var enumObj:Dynamic = {};
@@ -1076,7 +1079,10 @@ class Interp {
 		}
 	}
 
-	// TODO: separate large declarations (EClass, EEnum, etc...) into inline functions
+	// TODO: extract large methods (EClass, EEnum, etc...) into separated functions
+	#if !debug
+	@:noDebug // Greatly reduce the size of stack frames at the expense of worse debugging for this function (if used on non-debug builds).
+	#end
 	public function expr(e:Expr):Dynamic {
 		#if hscriptPos
 		curExpr = e;
@@ -1499,6 +1505,7 @@ class Interp {
 			case ETernary(econd, e1, e2):
 				return if (expr(econd) == true) expr(e1) else expr(e2);
 			case ESwitch(e, cases, def):
+				// TODO: extract this method
 				var old:Int = declared.length;
 				var val:Dynamic = expr(e);
 				var match = false;
@@ -1547,6 +1554,8 @@ class Interp {
 								}
 						}
 					}
+
+					if(c.hasGuard && expr(c.guard) == false) continue;
 
 					if (match) {
 						val = expr(c.expr);

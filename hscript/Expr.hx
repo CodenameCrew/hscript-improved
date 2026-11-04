@@ -255,6 +255,8 @@ final class ObjectField {
 final class SwitchCase {
 	public var values : Array<Expr>;
 	public var expr : Expr;
+	public var guard : Expr;
+	public var hasGuard:Bool;
 }
 
 @:structInit

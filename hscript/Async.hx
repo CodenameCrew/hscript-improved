@@ -417,7 +417,7 @@ class Async {
 			if( currentLoop == null ) throw "Continue outside loop";
 			return block([retNull(currentLoop, e), mk(EReturn(),e)], e);
 		case ESwitch(v, cases, def):
-			var cases:Array<SwitchCase> = [for( c in cases ) { values : c.values, expr : toCps(c.expr, rest, exit) } ];
+			var cases:Array<SwitchCase> = [for( c in cases ) { values : c.values, expr : toCps(c.expr, rest, exit), guard: c.guard, hasGuard: c.hasGuard } ];
 			return toCps(v, mk(EFunction([ { name : "_c", t : null, opt: false, value: null } ], mk(ESwitch(ident("_c",v), cases, def == null ? retNull(rest) : toCps(def, rest, exit)),e)),e), exit );
 		case EThrow(v):
 			return toCps(v, mk(EFunction([ { name : "_v", t : null, opt: false, value: null } ], mk(EThrow(v),v)), v), exit);

@@ -356,7 +356,13 @@ class TestHScript extends TestCase {
 		assertPos.methodName = "testCast";
 		assertPos.lineNumber = 357;
 		assertScript('var a = cast b; a', 10, {b: 10});
-		assertScript('cast(m, Map).get(1)', 64, {m: [1 => 64]});
+		assertScript('cast(m, Map).get(1)', 64, {m: [1 => 64]}, true);
+	}
+
+	function testSwitchGuards() {
+		assertPos.methodName = "testSwitchGuards";
+		assertPos.lineNumber = 364;
+		assertScript('var a = 10; switch(b) {case 20 if(a > 10): a = 20; case 20: a = 5;}; a', 5, {b: 20});
 	}
 
 	static function main() {

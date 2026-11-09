@@ -466,6 +466,28 @@ class Printer {
 			add(" : ");
 			addType(t);
 			add(")");
+		case EAbstract(name, t, fields, from, to):
+			add('abstract $name(');
+			addType(t); 
+			add(")");
+			if(from != null) {
+				add(" from ");
+				addType(from);
+			}
+			if(to != null) {
+				add(" to ");
+				addType(t);
+			}
+
+			tabs += "\t";
+			add(" {\n");
+			for( e in fields ) {
+				add(tabs);
+				expr(e);
+			}
+
+			tabs = tabs.substr(1);
+			add("}\n");
 		}
 	}
 

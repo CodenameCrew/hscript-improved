@@ -66,8 +66,8 @@ class UsingHandler {
 		}
 	];
 
-	@:allow(hscript.CustomClass)
-	@:allow(hscript.CustomClassHandler)
+	@:allow(hscript.types.CustomClass)
+	@:allow(hscript.types.CustomClassHandler)
 	public var usingEntries(default, null):Map<String, UsingEntry> = [];
 	/** True once at least one entry is registered. Lets fcall skip the empty-map check without allocating an iterator. **/
 	public var hasUsingEntries:Bool = false;

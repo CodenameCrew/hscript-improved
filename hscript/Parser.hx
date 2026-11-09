@@ -1120,6 +1120,37 @@ class Parser {
 			push(tk);
 			mk(EClass(name, fields, extend, interfaces, nextIsFinal, nextIsPrivate), p1);
 
+		case "abstract":
+			// TODO: abstract enum
+			// if(maybe(TId("enum")))
+			if(!allowTypes) error(ECustom('"allowTypes" must be enabled for declaring abstracts'), p1, tokenMax);
+			final name = getIdent();
+			ensure(TPOpen);
+			var underlyingType:CType = parseType();
+			ensure(TPClose);
+
+			var from:Null<CType> = null;
+			var to:Null<CType> = null;
+
+			if(maybe(TId("from"))) 
+				from = parseType();
+			if(maybe(TId("to")))
+				to = parseType();
+
+			ensure(TBrOpen);
+
+			final fields:Array<Expr> = [];
+			var tk:Token = null;
+			while(true) {
+				// TODO: check for allowed set of expressions for abstracts
+				parseFullExpr(fields);
+				tk = token();
+				if( tk == TBrClose || (resumeErrors && tk == TEof) )
+					break;
+				push(tk);
+			}
+
+			mk(EAbstract(name, underlyingType, fields, from, to));
 		case "enum":
 			var isAbstract = maybe(TId("abstract"));
 			var name = getIdent();

@@ -385,6 +385,8 @@ class Bytes {
 		case ECast(e, t):
 			doEncode(e);
 			encodeType(t);
+		case EAbstract(_):
+
 		}
 	}
 
@@ -660,6 +662,8 @@ class Bytes {
 			final r = doDecodeString();
 			final f = doDecodeString();
 			ERegex(r, f);
+		case BABSTRACT:
+			null; // TODO: 
 		case 255:
 			null;
 		default:
@@ -747,6 +751,7 @@ enum abstract ByteExpr(Int) from Int to Int {
 	var BENUM;
 	var BCAST;
 	var BREGEX;
+	var BABSTRACT;
 }
 
 enum abstract ByteType(Int) from Int to Int {

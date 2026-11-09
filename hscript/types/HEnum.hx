@@ -1,4 +1,4 @@
-package hscript;
+package hscript.types;
 
 import hscript.utils.UnsafeReflect;
 

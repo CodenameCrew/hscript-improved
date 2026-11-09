@@ -65,9 +65,9 @@ class ClassExtendMacro {
 			if(key == "away3d.tools.commands.Mirror") return fields; // Error: Unknown identifier
 			if(key == "away3d.tools.commands.SphereMaker") return fields; // Error: Unknown identifier
 			if(key == "away3d.tools.commands.Weld") return fields; // Error: Unknown identifier
-			if(fkey == "hscript.CustomClassHandler.TemplateClass") return fields; // Error: Redefined
-			if(fkey == "hscript.CustomClassHandler.CustomTemplateClass") return fields; // Error: Redefined
-			if(fkey == "hscript.CustomClass") return fields; // Error: Redefined
+			if(fkey == "hscript.types.CustomClassHandler.TemplateClass") return fields; // Error: Redefined
+			if(fkey == "hscript.types.CustomClassHandler.CustomTemplateClass") return fields; // Error: Redefined
+			if(fkey == "hscript.types.CustomClass") return fields; // Error: Redefined
 			if(key == "sys.thread.EventLoop") return fields; // Error: cant override force inlined
 			if(Config.DISALLOW_CUSTOM_CLASSES.contains(cl.module) || Config.DISALLOW_CUSTOM_CLASSES.contains(fkey)) return fields;
 			// TODO: Exclude classes that start with an underscore, as they indicate classes that were created through compilation from parameters.
@@ -495,12 +495,12 @@ class ClassExtendMacro {
 							return v;
 						}
 						else @:privateAccess {
-							var cls:hscript.CustomClass = cast __interp.__customClass.__upperClass;
+							var cls:hscript.types.CustomClass = cast __interp.__customClass.__upperClass;
 							while(cls != null) {
 								if(cls.hasField(name)) 
 									return cls.getField(name);
 								
-								var prev:hscript.CustomClass = cast cls.__upperClass;
+								var prev:hscript.types.CustomClass = cast cls.__upperClass;
 								if(prev == null)
 									break;
 								cls = prev;
@@ -521,12 +521,12 @@ class ClassExtendMacro {
 							return v;
 						}
 						else @:privateAccess {
-							var cls:hscript.CustomClass = cast __interp.__customClass.__upperClass;
+							var cls:hscript.types.CustomClass = cast __interp.__customClass.__upperClass;
 							while(cls != null) {
 								if(cls.hasField(name)) 
 									return cls.getField(name);
 								
-								var prev:hscript.CustomClass = cast cls.__upperClass;
+								var prev:hscript.types.CustomClass = cast cls.__upperClass;
 								if(prev == null)
 									break;
 								cls = prev;
@@ -550,12 +550,12 @@ class ClassExtendMacro {
 							return val;
 						}
 						else @:privateAccess {
-							var cls:hscript.CustomClass = cast __interp.__customClass.__upperClass;
+							var cls:hscript.types.CustomClass = cast __interp.__customClass.__upperClass;
 							while(cls != null) {
 								if(cls.hasField(name)) 
 									return cls.setField(name, val);
 								
-								var prev:hscript.CustomClass = cast cls.__upperClass;
+								var prev:hscript.types.CustomClass = cast cls.__upperClass;
 								if(prev == null)
 									break;
 								cls = prev;
@@ -581,12 +581,12 @@ class ClassExtendMacro {
 							return val;
 						}
 						else @:privateAccess {
-							var cls:hscript.CustomClass = cast __interp.__customClass.__upperClass;
+							var cls:hscript.types.CustomClass = cast __interp.__customClass.__upperClass;
 							while(cls != null) {
 								if(cls.hasField(name)) 
 									return cls.setField(name, val);
 								
-								var prev:hscript.CustomClass = cast cls.__upperClass;
+								var prev:hscript.types.CustomClass = cast cls.__upperClass;
 								if(prev == null)
 									break;
 								cls = prev;

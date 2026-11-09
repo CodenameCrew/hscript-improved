@@ -31,7 +31,7 @@ package hscript;
 import haxe.Exception;
 import haxe.ds.StringMap;
 import haxe.ds.ObjectMap;
-import hscript.HEnum.HEnumValue;
+import hscript.types.HEnum;
 import haxe.CallStack;
 import hscript.utils.UsingHandler;
 import hscript.utils.UnsafeReflect;
@@ -84,7 +84,7 @@ class RedeclaredVar {
 	public var depth:Int;
 }
 
-@:access(hscript.CustomClass)
+@:access(hscript.types.CustomClass)
 @:analyzer(optimize, local_dce, fusion, user_var_fusion)
 class Interp {
 	private static final _EMPTY_ARGS:Array<Dynamic> = [];
@@ -1089,7 +1089,7 @@ class Interp {
 		var e = e.e;
 		#end
 		switch (e) {
-			case EPackage(_):
+			case EPackage(_) | EAbstract(_):
 			case EClass(name, fields, extend, interfaces, isFinal):
 				exprClass(name, fields, extend, interfaces, isFinal);
 			case EImport(clsName, aliasAs, isUsing):
@@ -1178,6 +1178,7 @@ class Interp {
 				}
 				return get(field, f);
 			case EBinop(op, e1, e2):
+				// TODO: extract this method
 				return switch(op) {
 					case OpAdd: expr(e1) + expr(e2);
 					case OpSub: expr(e1) - expr(e2);
@@ -1812,6 +1813,7 @@ class Interp {
 					if (f.value != null && walkHasFunctionLiteral(f.value)) return true;
 				false;
 			case EClass(_, _, _, _, _, _): false; // class fields execute in a separate CustomClass interp
+			case EAbstract(_): false;
 		}
 	}
 
@@ -2054,7 +2056,7 @@ class Interp {
 	}
 
 	// Custom Class Static Extension
-	@:access(hscript.CustomClassHandler)
+	@:access(hscript.types.CustomClassHandler)
 	function setCustomClassUsing(name:String, cls:CustomClassHandler) {
 		if (usingHandler.entryExists(name)) return;
 

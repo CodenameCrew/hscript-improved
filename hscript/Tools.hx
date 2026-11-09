@@ -140,5 +140,4 @@ class Tools {
 
 	public static inline function isCustomAbstract(obj:Dynamic):Bool
 		return obj != null && obj is IHScriptAbstractBehaviour;
-
 }

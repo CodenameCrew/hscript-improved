@@ -243,6 +243,7 @@ enum Expr {
 	EEnum( en:EnumDecl, ?isAbstract:Bool );
 	ECast(e:Expr, ?t:CType);
 	ERegex(e:String, flags:String);
+	EAbstract(name:String, t:CType, fields:Array<Expr>, ?from:CType, ?to:CType);
 }
 
 @:structInit

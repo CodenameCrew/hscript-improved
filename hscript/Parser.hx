@@ -1144,13 +1144,12 @@ class Parser {
 			while(true) {
 				// TODO: check for allowed set of expressions for abstracts
 				parseFullExpr(fields);
-				tk = token();
 				if( tk == TBrClose || (resumeErrors && tk == TEof) )
 					break;
 				push(tk);
 			}
 
-			mk(EAbstract(name, underlyingType, fields, from, to));
+			mk(EAbstract(name, underlyingType, fields, [], from, to));
 		case "enum":
 			var isAbstract = maybe(TId("abstract"));
 			var name = getIdent();

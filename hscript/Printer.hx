@@ -466,7 +466,7 @@ class Printer {
 			add(" : ");
 			addType(t);
 			add(")");
-		case EAbstract(name, t, fields, from, to):
+		case EAbstract(name, t, fields, ops, from, to):
 			add('abstract $name(');
 			addType(t); 
 			add(")");

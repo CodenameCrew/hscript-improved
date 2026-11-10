@@ -6,6 +6,7 @@ class CustomAbstract implements IHScriptAbstractBehaviour {
     public var v:Dynamic;
 
 	public var hasOp:Bool;
+    public final ops:Map<String, String> = [];
 	public var hasArr:Bool;
 
     public function new(name:String, v:Dynamic) {

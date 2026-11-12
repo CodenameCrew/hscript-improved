@@ -134,8 +134,11 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 			__superClass = Type.createInstance(__class.cl, args);
 			var disallowCopy:Array<String> = {
 				var fieldMap:Map<String, String> = []; // Prevent duplicate values
-				for(f in Reflect.fields(__superClass).concat(Type.getInstanceFields(Type.getClass(__superClass))))
+				for(f in Reflect.fields(__superClass).concat(Type.getInstanceFields(Type.getClass(__superClass)))) {
 					fieldMap.set(f, f);
+					if(StringTools.startsWith(f, "get_") || StringTools.startsWith(f, "set_"))
+						fieldMap.set(f.substr(4), f.substr(4));
+				}
 
 				fieldMap.array();
 			}

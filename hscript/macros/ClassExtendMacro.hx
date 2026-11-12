@@ -261,12 +261,12 @@ class ClassExtendMacro {
 
 						if (returns) {
 							overrideExpr = macro {
-								var name:String = $v{name};
+								var __fieldName:String = $v{name};
 
-								if (__interp != null && __class__fields.contains(name)) {
-									var v:Dynamic = null;
-									if (Reflect.isFunction(v = __interp.variables.get(name))) {
-										return v($a{arguments});
+								if (__interp != null && __class__fields.contains(__fieldName)) {
+									var __function:Dynamic = null;
+									if (Reflect.isFunction(__function = __interp.variables.get(__fieldName))) {
+										return __function($a{arguments});
 									}
 								}
 
@@ -274,12 +274,12 @@ class ClassExtendMacro {
 							};
 						} else {
 							overrideExpr = macro {
-								var name:String = $v{name};
+								var __fieldName:String = $v{name};
 
-								if (__interp != null && __class__fields.contains(name)) {
-									var v:Dynamic = null;
-									if (Reflect.isFunction(v = __interp.variables.get(name))) {
-										v($a{arguments});
+								if (__interp != null && __class__fields.contains(__fieldName)) {
+									var __function:Dynamic = null;
+									if (Reflect.isFunction(__function = __interp.variables.get(__fieldName))) {
+										__function($a{arguments});
 										return;
 									}
 								}

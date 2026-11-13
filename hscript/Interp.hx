@@ -40,6 +40,7 @@ import hscript.Expr;
 import haxe.Constraints.IMap;
 
 using StringTools;
+using hscript.utils.FieldsUtil;
 
 private enum Stop {
 	SBreak;
@@ -93,22 +94,17 @@ class Interp {
 
 	private var __instanceFields:Map<String, Bool>;
 
-	/** Maps an array of field names into a lookup map (O(1) membership checks). **/
-	private static function fieldsToMap(m:Map<String, Bool>, fields:Array<String>, clear:Bool = true) {
-		if(clear) m.clear();
-		for (f in fields) m.set(f, true);
-	}
-
 	public var scriptObject(default, set):Dynamic;
 	public function set_scriptObject(v:Dynamic) {
-		if(__instanceFields == null) __instanceFields = []; // TODO: only create the map if the value is not null.
+		if(__instanceFields == null && v != null) __instanceFields = [];
 		switch(Type.typeof(v)) {
 			case TClass(c): // Class Access
-				fieldsToMap(__instanceFields, Type.getInstanceFields(c));
+				__instanceFields.clear();
+				__instanceFields.setFields(Type.getInstanceFields(c));
 				if(v is IHScriptCustomClassBehaviour) {
 					var classFields:Array<String> = cast(v, IHScriptCustomClassBehaviour).__class__fields;
 					if(classFields != null)
-						fieldsToMap(__instanceFields, classFields, false);
+						__instanceFields.setFields(classFields);
 					inCustomClass = true;
 					_scriptObjectType = SCustomClass;
 				} else if(v is IHScriptCustomAccessBehaviour) {
@@ -122,14 +118,15 @@ class Interp {
 				var cls = Type.getClass(v);
 				switch(Type.typeof(cls)) {
 					case TClass(c): // Static Class Access
-						fieldsToMap(__instanceFields, Type.getInstanceFields(c));
+						__instanceFields.clear();
+						__instanceFields.setFields(Type.getInstanceFields(c));
 						_scriptObjectType = SStaticClass;
 					default: // Object Access
-						fieldsToMap(__instanceFields, Reflect.fields(v));
+						__instanceFields.setFields(Reflect.fields(v));
 						_scriptObjectType = SObject;
 				}
 			default: // Null or other
-				__instanceFields.clear();
+				__instanceFields?.clear();
 				_scriptObjectType = SNull;
 		}
 		hasScriptObject = v != null;

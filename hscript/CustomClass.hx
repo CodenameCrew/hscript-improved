@@ -3,6 +3,7 @@ package hscript;
 import hscript.utils.UnsafeReflect;
 import haxe.Constraints.Function;
 
+using StringTools;
 using Lambda;
 
 /**
@@ -132,12 +133,14 @@ class CustomClass implements IHScriptCustomClassBehaviour {
 				UnsafeReflect.setField(__class.cl, "__cachedFieldSet", __cachedFieldSet);
 
 			__superClass = Type.createInstance(__class.cl, args);
-			var disallowCopy:Array<String> = {
-				var fieldMap:Map<String, String> = []; // Prevent duplicate values
+			final disallowCopy:Array<String> = {
+				final fieldMap:Map<String, String> = []; // Prevent duplicate values
 				for(f in Reflect.fields(__superClass).concat(Type.getInstanceFields(Type.getClass(__superClass)))) {
+					final isProperty:Bool = f.startsWith("get_") || f.startsWith("set_");
+					final realFieldName:Null<String> = isProperty ? f.substr(4) : null;
 					fieldMap.set(f, f);
-					if(StringTools.startsWith(f, "get_") || StringTools.startsWith(f, "set_"))
-						fieldMap.set(f.substr(4), f.substr(4));
+					if(isProperty)
+						fieldMap.set(realFieldName, realFieldName);
 				}
 
 				fieldMap.array();

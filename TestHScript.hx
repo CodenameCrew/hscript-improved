@@ -16,10 +16,11 @@ class TestHScript extends TestCase {
 	 * @param allowTypes Allow types parsing on script (default: false)
 	 * @param pos `trace()` call information
 	 */
-	function assertScript(x:String, v:Dynamic, ?vars:Dynamic, allowTypes = false, ?pos:haxe.PosInfos) {
+	function assertScript(x:String, v:Dynamic, ?vars:Dynamic, allowTypes = false, allowRegex = false, ?pos:haxe.PosInfos) {
 		pos ??= assertPos;
 		var p = new hscript.Parser();
 		p.allowTypes = allowTypes;
+		p.allowRegex = allowRegex;
 		p.allowMetadata = true;
 		var program = p.parseString(x);
 		var bytes = hscript.Bytes.encode(program, allowTypes);
@@ -77,7 +78,7 @@ class TestHScript extends TestCase {
 	};
 
 	function test():Void {
-		assertPos.lineNumber = 81;
+		assertPos.lineNumber = 82;
 		assertScript("0",0);
 		assertScript("var o = { x : 1 }; o.x = 5; o.x", 5);
 		assertScript("var o = { x : 1 }; o.x += 2; o.x *= 3; o.x", 9);
@@ -194,7 +195,7 @@ class TestHScript extends TestCase {
 
 	function testNullFieldAccess():Void {
 		assertPos.methodName = "testNullFieldAccess";
-		assertPos.lineNumber = 208;
+		assertPos.lineNumber = 209;
 		var pt = {
 			x : 10,
 			call : function() { return 11; }
@@ -226,7 +227,7 @@ class TestHScript extends TestCase {
 
 	function testIsOperator():Void {
 		assertPos.methodName = "testIsOperator";
-		assertPos.lineNumber = 237;
+		assertPos.lineNumber = 238;
 		var vars = {
 			String: String,
 			Bool: Bool,
@@ -260,7 +261,7 @@ class TestHScript extends TestCase {
 
 	function testMap():Void {
 		assertPos.methodName = "testMap";
-		assertPos.lineNumber = 276;
+		assertPos.lineNumber = 277;
 		var objKey = { ok:true };
 		var vars = {
 			stringMap: ["foo" => "Foo", "bar" => "Bar"],
@@ -287,7 +288,7 @@ class TestHScript extends TestCase {
 				assertEquals('A', vars.objMap[key]);
 			}
 		}
-
+		assertPos.lineNumber += 8;
 		assertScript('
 			var keys = [];
 			for (key in stringMap.keys()) keys.push(key);
@@ -297,7 +298,7 @@ class TestHScript extends TestCase {
 			for (key in vars.stringMap.keys()) keys.push(key);
 			keys.join("_");
 		}, vars);
-		assertPos.lineNumber += 9;
+		assertPos.lineNumber += 10;
 		assertScript('stringMap.remove("foo"); stringMap.exists("foo");', false, vars);
 		assertScript('stringMap["foo"] = "a"; stringMap["foo"] += "b"', 'ab', vars);
 		assertEquals('ab', vars.stringMap['foo']);
@@ -313,7 +314,7 @@ class TestHScript extends TestCase {
 
 	function testPackage():Void {
 		assertPos.methodName = "testPackage";
-		assertPos.lineNumber = 316;
+		assertPos.lineNumber = 318;
 		assertScriptRun('package;');
 		assertScriptRun('package my.pack;');
 		assertScriptRun('package my.other.pack;');
@@ -321,7 +322,7 @@ class TestHScript extends TestCase {
 
 	function testImport() {
 		assertPos.methodName = "testImport";
-		assertPos.lineNumber = 324;
+		assertPos.lineNumber = 326;
 		assertScript('import haxe.ds.StringMap; StringMap', haxe.ds.StringMap);
 		assertScript('import Math as HaxeMath; HaxeMath', Math);
 		assertScript('using StringTools; "  hscript  ".trim()', "hscript");
@@ -330,7 +331,7 @@ class TestHScript extends TestCase {
 
 	function testClass() {
 		assertPos.methodName = "testClass";
-		assertPos.lineNumber = 333;
+		assertPos.lineNumber = 335;
 		assertScript("class M {public var a:Int; function new(a:Int){this.a = a;}} var m = new M(10); m.a", 10, null, true);
 		assertScript("class M {public static var N:Int = 10; public static function S(n:Int){return N += n;}} M.S(10)", 20, null, true);
 		assertScript("class M {public var a:Int; function new(a:Int){this.a = a;}} class MA extends M {function new() {super(20);}} var ma = new MA(); ma.a", 20, null, true);
@@ -339,7 +340,7 @@ class TestHScript extends TestCase {
 
 	function testProperty() {
 		assertPos.methodName = "testProperty";
-		assertPos.lineNumber = 342;
+		assertPos.lineNumber = 344;
 		assertScript("var n(default, set):Int = 16; function set_n(v):Int {return n = v;} n += 16; n", 32, null, true);
 		assertScript("var p(get, set):Int; var _p:Int = 16; function get_p():Int {return _p;} function set_p(v):Int {return _p = v;} p += 16; p", 32, null, true);
 		assertScript("@:isVar var m(get, set):String = 'hscript'; function get_m() return m; function set_m(v) return m = v; m = 'hscript-improved'; m", 'hscript-improved', null, true);
@@ -347,24 +348,31 @@ class TestHScript extends TestCase {
 
 	function testEnum() {
 		assertPos.methodName = "testEnum";
-		assertPos.lineNumber = 350;
+		assertPos.lineNumber = 352;
 		assertScript("enum E {INTEGER(i:Int); DECIMAL(f:Float); NULL;} var r = switch(E.INTEGER(10)) {case E.INTEGER(i): i; default: null;}; r", 10, null, true);
 		assertScript("enum abstract HttpStatus(Int) { var NOTFOUND = 404; var OK = 200; } var s = HttpStatus.OK; s", 200, null, true);
 	}
 
 	function testCast() {
 		assertPos.methodName = "testCast";
-		assertPos.lineNumber = 357;
+		assertPos.lineNumber = 358;
 		assertScript('var a = cast b; a', 10, {b: 10});
 		assertScript('cast(m, Map).get(1)', 64, {m: [1 => 64]}, true);
 	}
 
 	function testSwitchGuards() {
 		assertPos.methodName = "testSwitchGuards";
-		assertPos.lineNumber = 364;
+		assertPos.lineNumber = 366;
 		assertScript('var a = 10; switch(b) {case 20 if(a > 10): a = 20; case 20: a = 5;}; a', 5, {b: 20});
 		assertScript('enum TP { NUM(n:Float); STR(s:String); } var t = switch( TP.STR("abc") ) { case TP.STR(str) if(StringTools.contains(str, "a")): str; default: null; }; t', "abc", {"StringTools": StringTools}, true);
 		assertScript('var a = 0xFF; var b = 0x101; var r = switch( c ) { case a if(a > c): a; case b if(b < c): b; default: 0x00;}; r', 0x00, {c: 0x100});
+	}
+
+	function testRegex() {
+		assertPos.methodName = "testRegex";
+		assertPos.lineNumber = 375;
+		assertScript('var email = ~/[A-Z0-9._%-]+@[A-Z0-9.-]+\\.[A-Z][A-Z][A-Z]*/i; email.match("support@codenamecrew.org")', true, null, false, true);
+		assertScript('var r = ~/Hello your Computer has ([0-9]+) virus/; r.match(str); r.matched(1)', "10", {str: "Hello your Computer has 10 virus"}, false, true);
 	}
 
 	static function main() {

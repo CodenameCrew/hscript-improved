@@ -864,6 +864,7 @@ class Interp {
 
 	/** Handles `import` / `using` statements (extracted from the expr() switch). **/
 	@:noInline
+	@:access(hscript.CustomClassHandler)
 	function exprImport(clsName:String, aliasAs:Null<String>, isUsing:Bool):Void {
 		if(!importEnabled) return;
 
@@ -920,13 +921,30 @@ class Interp {
 		}
 
 		if(cl == null && en == null) {
-			if(allowStaticImports) { //allows for static imports like "haxe.io.Path.normalize"
+			if(allowStaticImports && oldSplitName.length > 1) { //allows for static imports like "haxe.io.Path.normalize" for both compiled and scripted classes
 				var clPth:Array<String> = oldSplitName.copy();
 				var funcName:String = clPth.pop();
-				var statField:Dynamic = Reflect.getProperty(Type.resolveClass(StringTools.trim(clPth.join("."))), funcName);
+				var statField:Dynamic = null;
+
+				// scripted class
+				final handler = customClasses.get(clPth[clPth.length-1]);
+				if(handler != null) {
+					statField = handler.getField(funcName);
+				} else {
+					final parent = importResolve(clPth.join("."));
+					if (parent!=null) {
+						statField = Reflect.getProperty(parent, funcName);
+					} 
+				}
 
 				if(statField != null) {
-					variables.set((toSetName != null && toSetName.length > 0 ? toSetName : funcName), statField);
+					final varName = (toSetName != null && toSetName.length > 0 ? toSetName : funcName);
+					variables.set(varName, statField);
+
+					// clear cache
+					varLocationCache.remove(varName);
+					__typeResolveCache.remove(varName);
+					
 					return;
 				}
 			}

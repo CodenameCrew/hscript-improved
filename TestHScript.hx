@@ -327,6 +327,11 @@ class TestHScript extends TestCase {
 		assertScript('import Math as HaxeMath; HaxeMath', Math);
 		assertScript('using StringTools; "  hscript  ".trim()', "hscript");
 		assertScript('using Lambda; [1, 2, 3, 4].find((i) -> return i == 2)', 2);
+		
+		// compiled class field imports
+		assertScript('import StringTools.contains; contains("hscript", "hscript")', true);
+		// scripted class field import
+		assertScript('class M {public static function double(val:Float){return val * 2;}} import M.double; double(10)', 20, null, true);
 	}
 
 	function testClass() {

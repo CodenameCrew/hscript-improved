@@ -929,10 +929,10 @@ class Interp {
 				// scripted class
 				final handler = customClasses.get(clPth[clPth.length-1]);
 				if(handler != null) {
-					statField = handler.getField(funcName);
+					statField = handler.hasField(funcName) ? handler.getField(funcName, false) : null;
 				} else {
 					final parent = importResolve(clPth.join("."));
-					if (parent!=null) {
+					if (parent != null) {
 						statField = Reflect.getProperty(parent, funcName);
 					} 
 				}

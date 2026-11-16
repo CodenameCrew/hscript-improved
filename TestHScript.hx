@@ -349,6 +349,7 @@ class TestHScript extends TestCase {
 		assertScript("var n(default, set):Int = 16; function set_n(v):Int {return n = v;} n += 16; n", 32, null, true);
 		assertScript("var p(get, set):Int; var _p:Int = 16; function get_p():Int {return _p;} function set_p(v):Int {return _p = v;} p += 16; p", 32, null, true);
 		assertScript("@:isVar var m(get, set):String = 'hscript'; function get_m() return m; function set_m(v) return m = v; m = 'hscript-improved'; m", 'hscript-improved', null, true);
+		assertScript("class M { public static var allow(get, never):Bool; private static function get_allow():Bool return true;} M.allow;", true, null, true);
 	}
 
 	function testEnum() {

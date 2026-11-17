@@ -173,14 +173,14 @@ class Interp {
 	public var allowStaticVariables:Bool = false;
 	public var allowPublicVariables:Bool = false;
 
+	@:deprecated("refer to 'hscript.Config.IMPORT_BLACKLIST'")
 	public var importBlocklist(get, never):Array<String>;
 	private inline function get_importBlocklist():Array<String> {
 		return Config.IMPORT_BLACKLIST;
 	}
 
-	public function isBlocked(className:String):Bool
-	{
-		for (blocked in importBlocklist)
+	private static function isBlocked(className:String):Bool {
+		for (blocked in Config.IMPORT_BLACKLIST)
 			if (className == blocked || className.startsWith(blocked + "."))
 				return true;
 		

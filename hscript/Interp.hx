@@ -178,6 +178,15 @@ class Interp {
 		return Config.IMPORT_BLACKLIST;
 	}
 
+	public function isBlocked(className:String):Bool
+	{
+		for (blocked in importBlocklist)
+			if (className == blocked || className.startsWith(blocked + "."))
+				return true;
+		
+		return false;
+	}
+
 	var usingHandler:UsingHandler;
 
 	// TODO: separate cache into a class
@@ -713,9 +722,9 @@ class Interp {
 					case VNotFound:
 						var cached = __typeResolveCache.get(id);
 						if (cached != null) return cached;
-						var cl = Type.resolveClass(id);
+						var cl = isBlocked(id) ? null : Type.resolveClass(id);
 						if(cl != null) { __typeResolveCache.set(id, cl); return cl; }
-						var en = Type.resolveEnum(id);
+						var en = isBlocked(id) ? null : Type.resolveEnum(id);
 						if(en != null) { __typeResolveCache.set(id, en); return en; }
 						if (doException) error(EUnknownVariable(id));
 						null;
@@ -798,9 +807,9 @@ class Interp {
 		varLocationCache.set(id, VNotFound);
 		var cached = __typeResolveCache.get(id);
 		if (cached != null) return cached;
-		var cl = Type.resolveClass(id);
+		var cl = isBlocked(id) ? null : Type.resolveClass(id);
 		if(cl != null) { __typeResolveCache.set(id, cl); return cl; }
-		var en = Type.resolveEnum(id);
+		var en = isBlocked(id) ? null : Type.resolveEnum(id);
 		if(en != null) { __typeResolveCache.set(id, en); return en; }
 		if (doException)
 			error(EUnknownVariable(id));
@@ -894,7 +903,7 @@ class Interp {
 		
 		function importResolve(__clsName:String):Null<Dynamic> {
 			var _realClassName = getLocalImportRedirect(__clsName);
-			if(importBlocklist.contains(_realClassName)) {
+			if(isBlocked(_realClassName)) {
 				warn(ECustom('Invalid class: $_realClassName is blacklisted'));
 				return null;
 			}
@@ -905,7 +914,7 @@ class Interp {
 		}
 
 		var cl = importResolve(realClassName);
-		var en = Type.resolveEnum(realClassName);
+		var en = isBlocked(realClassName) ? null : Type.resolveEnum(realClassName);
 		//trace(realClassName, cl, en, splitClassName);
 
 		// Allow for flixel.ui.FlxBar.FlxBarFillDirection;
@@ -915,7 +924,7 @@ class Interp {
 				realClassName = splitClassName.join(".");
 
 				cl = importResolve(realClassName);
-				en = Type.resolveEnum(realClassName);
+				en = isBlocked(realClassName) ? null : Type.resolveEnum(realClassName);
 				//trace(realClassName, cl, en, splitClassName);
 			}
 		}
@@ -1905,6 +1914,8 @@ class Interp {
 		var cached = __fieldTypeCache.get(fullPath);
 		if (cached != null)
 			return cached == _TYPE_PATH_NEG ? null : cached;
+		if (isBlocked(fullPath))
+			return null;
 		var cl:Dynamic = Type.resolveClass(fullPath);
 		if (cl == null)
 			cl = Type.resolveEnum(fullPath);
@@ -2153,7 +2164,7 @@ class Interp {
 	function cnew(cl:String, args:Array<Dynamic>):Dynamic {
 		var c:Dynamic = __cnewClassCache.get(cl);
 		if (c == null) {
-			c = Type.resolveClass(cl);
+			c = isBlocked(cl) ? null : Type.resolveClass(cl);
 			if (c != null)
 				__cnewClassCache.set(cl, c);
 		}

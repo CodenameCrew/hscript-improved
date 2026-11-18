@@ -1730,9 +1730,7 @@ class Interp {
 		if(isKeyValue)
 			declared.push({n: ithv, old: locals.get(ithv), depth: depth});
 		declared.push({n: n, old: locals.get(n), depth: depth});
-		var it = makeIterator(expr(it), isKeyValue);
-		var _hasNext = it.hasNext;
-		var _next = it.next;
+		var it:Iterator<Dynamic> = makeIterator(expr(it), isKeyValue);
 		var reuseVar = depth == 0 || !bodyHasFunctionLiteral(e);
 		var kvDecl:DeclaredVar = null;
 		var varDecl:DeclaredVar = null;
@@ -1740,8 +1738,8 @@ class Interp {
 			if (isKeyValue) kvDecl = {r: null, depth: depth};
 			varDecl = {r: null, depth: depth};
 		}
-		while (_hasNext()) {
-			var next = _next();
+		while (it.hasNext()) {
+			var next:Dynamic = it.next();
 			if (isKeyValue) {
 				if (reuseVar) {
 					kvDecl.r = next.key;

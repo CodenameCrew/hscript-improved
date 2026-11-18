@@ -822,21 +822,22 @@ class Interp {
 		cacheValid = true;
 	}
 
-	public static var importRedirects:Map<String, String> = new Map();
+	public static var importRedirects:Map<String, String>;
 	public static function getImportRedirect(className:String):String {
-		var redirect = importRedirects.get(className);
-		return redirect != null ? redirect : className;
+		if(importRedirects == null) return className;
+		return importRedirects.get(className) ?? className;
 	}
 
-	public var localImportRedirects:Map<String, String> = new Map();
+	public var localImportRedirects:Map<String, String>;
 	public function getLocalImportRedirect(className:String):String {
-		var redirect = importRedirects.get(className);
-		if (redirect != null)
-			className = redirect;
-		redirect = localImportRedirects.get(className);
-		if (redirect != null)
-			className = redirect;
-		return className;
+		var redirect:Null<String> = null;
+		if (importRedirects != null)
+			redirect = importRedirects.get(className);
+
+		if (localImportRedirects != null)
+			redirect = localImportRedirects.get(className);
+
+		return redirect ?? className;
 	}
 
 	/** Handles `class Foo { ... }` declarations (extracted from the expr() switch). **/
@@ -901,6 +902,7 @@ class Interp {
 			return;
 		}
 		
+		// TODO: extract this method
 		function importResolve(__clsName:String):Null<Dynamic> {
 			var _realClassName = getLocalImportRedirect(__clsName);
 			if(isBlocked(_realClassName)) {
@@ -925,7 +927,6 @@ class Interp {
 
 				cl = importResolve(realClassName);
 				en = isBlocked(realClassName) ? null : Type.resolveEnum(realClassName);
-				//trace(realClassName, cl, en, splitClassName);
 			}
 		}
 

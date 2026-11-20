@@ -137,8 +137,9 @@ class Parser {
 			["..."],
 			["&&"],
 			["||"],
+			["??"],
 			["=","+=","-=","*=","/=","%=","<<=",">>=",">>>=","|=","&=","^=","=>","??" + "="],
-			["->", "??"],
+			["->"],
 			["is"]
 		];
 		opPriority = new Map();
@@ -147,13 +148,13 @@ class Parser {
 		for(i => p in priorities) 
 			for(x in p) {
 				opPriority.set(x, i);
-				if( i == 9 ) opRightAssoc.set(x, true);
+				if( i == 10 ) opRightAssoc.set(x, true);
 			}
 		#else
 		for( i in 0...priorities.length )
 			for( x in priorities[i] ) {
 				opPriority.set(x, i);
-				if( i == 9 ) opRightAssoc.set(x, true);
+				if( i == 10 ) opRightAssoc.set(x, true);
 			}
 		#end
 		for( x in ["!", "++", "--", "~"] ) // unary "-" handled in parser directly!

@@ -133,30 +133,24 @@ class Parser {
 			["+", "-"],
 			["<<", ">>", ">>>"],
 			["|", "&", "^"],
+			["??"],
 			["==", "!=", ">", "<", ">=", "<="],
 			["..."],
 			["&&"],
 			["||"],
-			["??"],
 			["=","+=","-=","*=","/=","%=","<<=",">>=",">>>=","|=","&=","^=","=>","??" + "="],
 			["->"],
 			["is"]
 		];
-		opPriority = new Map();
-		opRightAssoc = new Map();
-		#if (haxe >= "4.0.0")
-		for(i => p in priorities) 
+		opPriority = [];
+		opRightAssoc = [];
+		for(i => p in priorities) {
+			final isEq:Bool = p[0] == "=";
 			for(x in p) {
 				opPriority.set(x, i);
-				if( i == 10 ) opRightAssoc.set(x, true);
+				if( isEq ) opRightAssoc.set(x, true);
 			}
-		#else
-		for( i in 0...priorities.length )
-			for( x in priorities[i] ) {
-				opPriority.set(x, i);
-				if( i == 10 ) opRightAssoc.set(x, true);
-			}
-		#end
+		}
 		for( x in ["!", "++", "--", "~"] ) // unary "-" handled in parser directly!
 			opPriority.set(x, (x == "++" || x == "--") ? -1 : -2);
 	}

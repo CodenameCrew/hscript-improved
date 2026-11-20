@@ -381,6 +381,15 @@ class TestHScript extends TestCase {
 		assertScript('var r = ~/Hello your Computer has ([0-9]+) virus/; r.match(str); r.matched(1)', "10", {str: "Hello your Computer has 10 virus"}, false, true);
 	}
 
+	function testBypassAccessor() {
+		final vars = {"BypassAccessor": TestBypassAccessor};
+		assertScript('var a = new BypassAccessor(); @:bypassAccessor { a.a = "hii"; } a.amt', 0, vars);
+		assertScript('var a = new BypassAccessor(); a.a = "hii"; a.amt', 1, vars);
+		
+		assertScript('function a() { @:bypassAccessor { return 1; }} a(); var b = new BypassAccessor(); b.a = "c"; b.amt', 1, vars);
+		assertScript('while (true) { @:bypassAccessor { break; }} var b = new BypassAccessor(); b.a = "c"; b.amt', 1, vars);	
+	}
+
 	static function main() {
 		#if ((haxe_ver < 4) && php)
 		// uncaught exception: The each() function is deprecated. This message will be suppressed on further calls (errno: 8192)
@@ -417,4 +426,14 @@ class TestClass {
 	public function getSum() {
 		return a + b;
 	}
+}
+
+class TestBypassAccessor {
+	public var a(default, set):String = "";
+	public var amt = 0;
+	function set_a(v) {
+		amt++;
+		return a = v;
+	}
+	function new() {}
 }

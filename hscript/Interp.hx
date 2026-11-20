@@ -1597,7 +1597,12 @@ class Interp {
 					case ":bypassAccessor":
 						final oldAccessor:Bool = isBypassAccessor;
 						isBypassAccessor = true;
-						val = expr(e);
+						try {
+							val = expr(e);
+						} catch(e){
+							isBypassAccessor = oldAccessor;
+							rethrow(e);
+						}
 						isBypassAccessor = oldAccessor;
 					default:
 						val = expr(e);

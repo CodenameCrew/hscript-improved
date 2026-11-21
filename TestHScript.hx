@@ -332,6 +332,15 @@ class TestHScript extends TestCase {
 		assertScript('import StringTools.contains; contains("hscript", "hscript")', true);
 		// scripted class field import
 		assertScript('class M {public static function double(val:Float){return val * 2;}} import M.double; double(10)', 20, null, true);
+		#if !hscriptNoWildcardImports
+		// wildcard imports
+		assertScript("import haxe.ds.*; StringMap", haxe.ds.StringMap);
+		final script = "import haxe.ds.*; var a = new StringMap(); a.set('hiii', 0xF0); a.get('hiii')";
+		assertScript(script, 0xF0);
+		assertScript(script+"; StringTools.trim(' hello ')","hello");
+		assertScript("import haxe.ds.*; Option.Some(123)", haxe.ds.Option.Some(123));
+		assertScript("import haxe.ds.*; switch Option.Some(321) { case Option.Some(v): v; case None: 0; }", 321);
+		#end
 	}
 
 	function testClass() {

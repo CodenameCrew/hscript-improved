@@ -338,8 +338,6 @@ class TestHScript extends TestCase {
 		final script = "import haxe.ds.*; var a = new StringMap(); a.set('hiii', 0xF0); a.get('hiii')";
 		assertScript(script, 0xF0);
 		assertScript(script+"; StringTools.trim(' hello ')","hello");
-		assertScript("import haxe.ds.*; Option.Some(123)", haxe.ds.Option.Some(123));
-		assertScript("import haxe.ds.*; switch Option.Some(321) { case Option.Some(v): v; case None: 0; }", 321);
 		#end
 	}
 

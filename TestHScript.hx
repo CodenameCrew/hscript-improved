@@ -33,7 +33,13 @@ class TestHScript extends TestCase {
 			for( v in Reflect.fields(vars) )
 				interp.variables.set(v,Reflect.field(vars,v));
 		var ret : Dynamic = interp.execute(program);
-		assertEquals(v, ret, pos);
+		if(Reflect.isEnumValue(v) && Reflect.isEnumValue(ret)) {
+			if(!Type.enumEq(v, ret)) {
+				assertEquals(Std.string(v), Std.string(ret), pos);
+			} else {
+				assertTrue(true, pos);
+			}
+		} else assertEquals(v, ret, pos);
 		assertPos.lineNumber += 1;
 	}
 
@@ -338,6 +344,7 @@ class TestHScript extends TestCase {
 		final script = "import haxe.ds.*; var a = new StringMap(); a.set('hiii', 0xF0); a.get('hiii')";
 		assertScript(script, 0xF0);
 		assertScript(script+"; StringTools.trim(' hello ')","hello");
+		assertScript("import haxe.ds.*; Option.Some(123)", haxe.ds.Option.Some(123));
 		#end
 	}
 

@@ -2352,18 +2352,17 @@ class Parser {
 				invalidChar(char);
 			default:
 				if( ops[char] ) {
-					var buf = new StringBuf();
-					buf.addChar(char);
+					var op = String.fromCharCode(char);
 					while( true ) {
 						char = readChar();
 						if( StringTools.isEof(char) ) char = 0;
 						if( !ops[char] ) {
 							this.char = char;
-							return TOp(buf.toString());
+							return TOp(op);
 						}
-						var pop = buf.toString();
-						buf.addChar(char);
-						var op = buf.toString();
+						
+						var pop = op;
+						op += String.fromCharCode(char);
 						if( allowRegex && op == "~/" ) {
 							var e = readString(char, true);
 							var f = readFlags();

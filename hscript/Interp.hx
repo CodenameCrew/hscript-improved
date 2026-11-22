@@ -146,7 +146,7 @@ class Interp {
 	/**
 	 * Custom Import resolver. It's called when an import couldn't be resolved.
 	 */
-	public var importFailedCallback:Array<String>->Null<String>->Bool;
+	public var importFailedCallback:Array<String>->Null<String>->?Bool->Bool;
 
 	public var customClasses:Map<String, CustomClassHandler>;
 	public var variables:Map<String, Dynamic>;
@@ -978,7 +978,7 @@ class Interp {
 
 			beforeAlias = claVarName;
 			setAlias = aliasAs;
-			if(importFailedCallback == null || !importFailedCallback(oldSplitName, toSetName)){
+			if(importFailedCallback == null || !importFailedCallback(oldSplitName, toSetName, isWildCard)){
 				beforeAlias = null;
 				setAlias = null;
 				error(EInvalidClass(oldClassName));

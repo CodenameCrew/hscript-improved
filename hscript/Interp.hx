@@ -146,7 +146,7 @@ class Interp {
 	/**
 	 * Custom Import resolver. It's called when an import couldn't be resolved.
 	 */
-	public var importFailedCallback:Array<String>->Null<String>->Bool;
+	public var importFailedCallback:Array<String>->Null<String>->Null<Bool>->Bool;
 
 	public var customClasses:Map<String, CustomClassHandler>;
 	public var variables:Map<String, Dynamic>;

@@ -146,7 +146,7 @@ class Interp {
 	/**
 	 * Custom Import resolver. It's called when an import couldn't be resolved.
 	 */
-	public var importFailedCallback:Array<String>->Null<String>->Bool;
+	public var importFailedCallback:Array<String>->Null<String>->?Bool->Bool;
 
 	public var customClasses:Map<String, CustomClassHandler>;
 	public var variables:Map<String, Dynamic>;
@@ -978,7 +978,7 @@ class Interp {
 
 			beforeAlias = claVarName;
 			setAlias = aliasAs;
-			if(importFailedCallback == null || !importFailedCallback(oldSplitName, toSetName)){
+			if(importFailedCallback == null || !importFailedCallback(oldSplitName, toSetName, isWildCard)){
 				beforeAlias = null;
 				setAlias = null;
 				error(EInvalidClass(oldClassName));
@@ -1026,8 +1026,10 @@ class Interp {
 		final types  = TypeListRegistry.get(pkg);
 		
 		if(types == null) {
-			// copying the invalid class error
-			error(ECustom('Invalid package: $pkg was not found'));
+			if (importFailedCallback == null || !importFailedCallback(pkg.split("."), null, true)) {
+				// copying the invalid class error
+				error(ECustom('Invalid package: $pkg was not found'));
+			}
 			return;
 		}
 

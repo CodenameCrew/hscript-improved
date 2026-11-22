@@ -978,7 +978,7 @@ class Interp {
 
 			beforeAlias = claVarName;
 			setAlias = aliasAs;
-			if(importFailedCallback == null || !importFailedCallback(oldSplitName, toSetName)){
+			if(importFailedCallback == null || !importFailedCallback(oldSplitName, toSetName, null)){
 				beforeAlias = null;
 				setAlias = null;
 				error(EInvalidClass(oldClassName));

@@ -1026,8 +1026,10 @@ class Interp {
 		final types  = TypeListRegistry.get(pkg);
 		
 		if(types == null) {
-			// copying the invalid class error
-			error(ECustom('Invalid package: $pkg was not found'));
+			if (importFailedCallback == null || !importFailedCallback(pkg.split("."), null, true)) {
+				// copying the invalid class error
+				error(ECustom('Invalid package: $pkg was not found'));
+			}
 			return;
 		}
 

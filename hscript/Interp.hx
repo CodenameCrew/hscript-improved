@@ -28,6 +28,7 @@
  */
 package hscript;
 
+import hscript.utils.TypeListRegistry;
 import haxe.Exception;
 import haxe.ds.StringMap;
 import haxe.ds.ObjectMap;
@@ -172,6 +173,9 @@ class Interp {
 
 	public var allowStaticVariables:Bool = false;
 	public var allowPublicVariables:Bool = false;
+	#if !hscriptNoWildcardImports
+	public var allowWildcardImports:Bool = true;
+	#end
 
 	@:deprecated("refer to 'hscript.Config.IMPORT_BLACKLIST'")
 	public var importBlocklist(get, never):Array<String>;
@@ -875,8 +879,21 @@ class Interp {
 	/** Handles `import` / `using` statements (extracted from the expr() switch). **/
 	@:noInline
 	@:access(hscript.CustomClassHandler)
-	function exprImport(clsName:String, aliasAs:Null<String>, isUsing:Bool):Void {
+	function exprImport(clsName:String, aliasAs:Null<String>, isUsing:Bool, isWildCard:Bool):Void {
 		if(!importEnabled) return;
+		
+		if (isWildCard) {
+			#if !hscriptNoWildcardImports
+				if(!allowWildcardImports) {
+					error(ECustom('Wildcard imports are disabled'));
+				}
+				exprImportWildcard(clsName.trim());
+				return;
+			#else
+				error(ECustom('Wildcard imports are omitted from this build'));
+				return;
+			#end
+		}
 
 		var splitClassName:Array<String> = [for (e in clsName.split(".")) e.trim()];
 		var realClassName = splitClassName.join(".");
@@ -1002,6 +1019,28 @@ class Interp {
 		}
 	}
 
+	#if !hscriptNoWildcardImports
+	/** Handles `*`(wildcard) imports **/
+	@:noInline // whatever this does
+	function exprImportWildcard(pkg):Void {
+		final types  = TypeListRegistry.get(pkg);
+		
+		if(types == null) {
+			// copying the invalid class error
+			error(ECustom('Invalid package: $pkg was not found'));
+			return;
+		}
+
+		for (type in types) {
+			final full = pkg + '.'+ type;
+
+			if(isBlocked(full)) continue;
+			if(variables.exists(type) || customClasses.exists(type)) continue;
+			try exprImport(full, null, false, false) catch(e) {}
+		}
+	}
+	#end
+
 	/** Handles `enum` declarations (extracted from the expr() switch). **/
 	@:noInline
 	function exprEnum(en:EnumDecl, isAbstract:Bool):Void {
@@ -1117,8 +1156,8 @@ class Interp {
 			case EPackage(_):
 			case EClass(name, fields, extend, interfaces, isFinal):
 				exprClass(name, fields, extend, interfaces, isFinal);
-			case EImport(clsName, aliasAs, isUsing):
-				exprImport(clsName, aliasAs, isUsing);
+			case EImport(clsName, aliasAs, isUsing, isWildcard):
+				exprImport(clsName, aliasAs, isUsing, isWildcard);
 			case EEnum(en, isAbstract):
 				exprEnum(en, isAbstract);
 			case ERegex(e, f):
@@ -1803,7 +1842,7 @@ class Interp {
 	static function walkHasFunctionLiteral(e:Expr):Bool {
 		return switch (Tools.expr(e)) {
 			case EFunction(_, _, _, _, _, _, _, _, _, _): true;
-			case EConst(_) | EIdent(_) | EBreak | EContinue | EPackage(_) | ERegex(_, _) | EImport(_, _, _): false;
+			case EConst(_) | EIdent(_) | EBreak | EContinue | EPackage(_) | ERegex(_, _) | EImport(_, _, _, _): false;
 			case EVar(_, _, ev, _, _, _, _, _, _, _): ev != null && walkHasFunctionLiteral(ev);
 			case EParent(x) | EUnop(_, _, x) | EThrow(x) | EMeta(_, _, x) | ECast(x, _):
 				walkHasFunctionLiteral(x);

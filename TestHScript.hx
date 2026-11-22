@@ -33,7 +33,13 @@ class TestHScript extends TestCase {
 			for( v in Reflect.fields(vars) )
 				interp.variables.set(v,Reflect.field(vars,v));
 		var ret : Dynamic = interp.execute(program);
-		assertEquals(v, ret, pos);
+		if(Reflect.isEnumValue(v) && Reflect.isEnumValue(ret)) {
+			if(!Type.enumEq(v, ret)) {
+				assertEquals(Std.string(v), Std.string(ret), pos);
+			} else {
+				assertTrue(true, pos);
+			}
+		} else assertEquals(v, ret, pos);
 		assertPos.lineNumber += 1;
 	}
 
@@ -332,6 +338,14 @@ class TestHScript extends TestCase {
 		assertScript('import StringTools.contains; contains("hscript", "hscript")', true);
 		// scripted class field import
 		assertScript('class M {public static function double(val:Float){return val * 2;}} import M.double; double(10)', 20, null, true);
+		#if !hscriptNoWildcardImports
+		// wildcard imports
+		assertScript("import haxe.ds.*; StringMap", haxe.ds.StringMap);
+		final script = "import haxe.ds.*; var a = new StringMap(); a.set('hiii', 0xF0); a.get('hiii')";
+		assertScript(script, 0xF0);
+		assertScript(script+"; StringTools.trim(' hello ')","hello");
+		assertScript("import haxe.ds.*; Option.Some(123)", haxe.ds.Option.Some(123));
+		#end
 	}
 
 	function testClass() {

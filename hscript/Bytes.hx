@@ -193,10 +193,11 @@ class Bytes {
 		switch( e ) {
 		case EPackage(n):
 			doEncodeString(n == null ? "" : n);
-		case EImport(c, asName, isUsing):
+		case EImport(c, asName, isUsing, isWildcard):
 			doEncodeBoolean(isUsing ?? false);
 			doEncodeString(c);
 			doEncodeString(asName == null ? "" : asName);
+			doEncodeBoolean(isWildcard ?? false);
 		case EClass(name, fields, extend, interfaces, isFinal, _):
 			doEncodeString(name);
 			doEncodeString(extend == null ? "" : extend);
@@ -608,7 +609,8 @@ class Bytes {
 			final isUsing:Bool = doDecodeBoolean();
 			final cls = doDecodeString();
 			final asName = doDecodeString();
-			EImport(cls, asName == "" ? null : asName, isUsing);
+			final isWildcard:Bool = doDecodeBoolean();
+			EImport(cls, asName == "" ? null : asName, isUsing, isWildcard);
 		case BCLASS:
 			final name:String = doDecodeString();
 			final extend:String = doDecodeString();

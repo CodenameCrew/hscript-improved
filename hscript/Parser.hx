@@ -984,6 +984,7 @@ class Parser {
 			var isUsing = id == "using";
 			var oldReadPos = readPos;
 			var tk = token();
+			var isWildcard = false;
 			switch( tk ) {
 				case TPOpen:
 					if(isUsing) error(ECustom('Expected identifier'),tokenMin,tokenMax);
@@ -1013,6 +1014,7 @@ class Parser {
 						if( t != TDot ) {
 							if(t.match(TId("as"))) {
 								if(isUsing) error(ECustom('Expected . or ;'),tokenMin,tokenMax);
+								if(isWildcard) error(ECustom('Expected . or ; or as'),tokenMin,tokenMax);
 								t = token();
 								switch( t ) {
 									case TId(id):
@@ -1030,6 +1032,9 @@ class Parser {
 						switch( t ) {
 							case TId(id):
 								path.push(id);
+							case TOp("*") if(!isUsing):
+								isWildcard = true; 
+								break;
 							default:
 								unexpected(t);
 						}
@@ -1037,7 +1042,7 @@ class Parser {
 					ensure(TSemicolon);
 					push(TSemicolon);
 					var p = path.join(".");
-					mk(EImport(p, asname, isUsing),p1);
+					mk(EImport(p, asname, isUsing, isWildcard),p1);
 				default:
 					unexpected(tk);
 					null;

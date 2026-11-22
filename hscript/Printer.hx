@@ -121,10 +121,11 @@ class Printer {
 			if(n != null)
 				add(' $n');
 			add(';\n');
-		case EImport(c, n, u):
+		case EImport(c, n, u, w):
 			add('${u ? 'using' : 'import'} $c');
 			if(n != null)
 				add(' as $n');
+			if(w==true) add('.*');
 		case EClass(name, fields, extend, interfaces, fnal):
 			var isFinal = fnal != null && fnal;
 			if(isFinal)

@@ -1730,7 +1730,13 @@ class Interp {
 		if(isKeyValue)
 			declared.push({n: ithv, old: locals.get(ithv), depth: depth});
 		declared.push({n: n, old: locals.get(n), depth: depth});
+		#if hl
 		var it:Iterator<Dynamic> = makeIterator(expr(it), isKeyValue);
+		#else 
+		var it = makeIterator(expr(it), isKeyValue);
+		var _hasNext = it.hasNext;
+		var _next = it.next;
+		#end
 		var reuseVar = depth == 0 || !bodyHasFunctionLiteral(e);
 		var kvDecl:DeclaredVar = null;
 		var varDecl:DeclaredVar = null;

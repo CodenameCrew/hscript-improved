@@ -1744,8 +1744,8 @@ class Interp {
 			if (isKeyValue) kvDecl = {r: null, depth: depth};
 			varDecl = {r: null, depth: depth};
 		}
-		while (it.hasNext()) {
-			var next:Dynamic = it.next();
+		while (#if hl it.hasNext() #else _hasNext() #end) {
+			var next:Dynamic = #if hl it.next() #else _next() #end ;
 			if (isKeyValue) {
 				if (reuseVar) {
 					kvDecl.r = next.key;

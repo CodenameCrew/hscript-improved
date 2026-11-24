@@ -43,10 +43,10 @@ jobs:
       run: |
         haxe bin/build-interp.hxml
         haxe bin/build-interp.hxml -D hscriptPos
-    # - name: Test neko
-    #   run: |
-    #     haxe bin/build-neko.hxml               && neko bin/Test.n
-    #     haxe bin/build-neko.hxml -D hscriptPos && neko bin/Test.n
+    - name: Test neko
+      run: |
+        haxe bin/build-neko.hxml               && neko bin/Test.n
+        haxe bin/build-neko.hxml -D hscriptPos && neko bin/Test.n
     - name: Test js
       run: |
         haxe bin/build-js.hxml               && node bin/Test.js

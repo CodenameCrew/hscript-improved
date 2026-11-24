@@ -140,5 +140,28 @@ class Tools {
 
 	public static inline function isCustomAbstract(obj:Dynamic):Bool
 		return obj != null && obj is IHScriptAbstractBehaviour;
-
+	
+	/** Neko: Invalid field access : __name__ **/
+	public static inline function safeResolveClass(name:String) {
+		#if neko
+		try {
+			return Type.resolveClass(name);
+		} catch (_) {
+			return null;
+		}
+		#else
+		return Type.resolveClass(name);
+		#end
+	}
+	public static inline function safeResolveEnum(name:String) {
+		#if neko
+		try {
+			return Type.resolveEnum(name);
+		} catch (_) {
+			return null;
+		}
+		#else
+		return Type.resolveEnum(name);
+		#end
+	}
 }

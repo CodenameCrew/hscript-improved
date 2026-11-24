@@ -726,9 +726,9 @@ class Interp {
 					case VNotFound:
 						var cached = __typeResolveCache.get(id);
 						if (cached != null) return cached;
-						var cl = isBlocked(id) ? null : Type.resolveClass(id);
+						var cl = isBlocked(id) ? null : Tools.safeResolveClass(id);
 						if(cl != null) { __typeResolveCache.set(id, cl); return cl; }
-						var en = isBlocked(id) ? null : Type.resolveEnum(id);
+						var en = isBlocked(id) ? null : Tools.safeResolveEnum(id);
 						if(en != null) { __typeResolveCache.set(id, en); return en; }
 						if (doException) error(EUnknownVariable(id));
 						null;
@@ -811,9 +811,9 @@ class Interp {
 		varLocationCache.set(id, VNotFound);
 		var cached = __typeResolveCache.get(id);
 		if (cached != null) return cached;
-		var cl = isBlocked(id) ? null : Type.resolveClass(id);
+		var cl = isBlocked(id) ? null : Tools.safeResolveClass(id);
 		if(cl != null) { __typeResolveCache.set(id, cl); return cl; }
-		var en = isBlocked(id) ? null : Type.resolveEnum(id);
+		var en = isBlocked(id) ? null : Tools.safeResolveEnum(id);
 		if(en != null) { __typeResolveCache.set(id, en); return en; }
 		if (doException)
 			error(EUnknownVariable(id));
@@ -927,13 +927,13 @@ class Interp {
 				return null;
 			}
 
-			var _cl = Type.resolveClass(_realClassName);
-			if(_cl == null) _cl = Type.resolveClass('${_realClassName}_HSC');
+			var _cl = Tools.safeResolveClass(_realClassName);
+			if(_cl == null) _cl = Tools.safeResolveClass('${_realClassName}_HSC');
 			return _cl;
 		}
 
 		var cl = importResolve(realClassName);
-		var en = isBlocked(realClassName) ? null : Type.resolveEnum(realClassName);
+		var en = isBlocked(realClassName) ? null : Tools.safeResolveEnum(realClassName);
 		//trace(realClassName, cl, en, splitClassName);
 
 		// Allow for flixel.ui.FlxBar.FlxBarFillDirection;
@@ -943,7 +943,7 @@ class Interp {
 				realClassName = splitClassName.join(".");
 
 				cl = importResolve(realClassName);
-				en = isBlocked(realClassName) ? null : Type.resolveEnum(realClassName);
+				en = isBlocked(realClassName) ? null : Tools.safeResolveEnum(realClassName);
 			}
 		}
 
@@ -1957,9 +1957,9 @@ class Interp {
 			return cached == _TYPE_PATH_NEG ? null : cached;
 		if (isBlocked(fullPath))
 			return null;
-		var cl:Dynamic = Type.resolveClass(fullPath);
+		var cl:Dynamic = Tools.safeResolveClass(fullPath);
 		if (cl == null)
-			cl = Type.resolveEnum(fullPath);
+			cl = Tools.safeResolveEnum(fullPath);
 		__fieldTypeCache.set(fullPath, cl != null ? cl : _TYPE_PATH_NEG);
 		return cl;
 	}
@@ -2205,7 +2205,7 @@ class Interp {
 	function cnew(cl:String, args:Array<Dynamic>):Dynamic {
 		var c:Dynamic = __cnewClassCache.get(cl);
 		if (c == null) {
-			c = isBlocked(cl) ? null : Type.resolveClass(cl);
+			c = isBlocked(cl) ? null : Tools.safeResolveClass(cl);
 			if (c != null)
 				__cnewClassCache.set(cl, c);
 		}

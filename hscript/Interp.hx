@@ -1770,7 +1770,7 @@ class Interp {
 			declared.push({n: ithv, old: locals.get(ithv), depth: depth});
 		declared.push({n: n, old: locals.get(n), depth: depth});
 		var it:Iterator<Dynamic> = makeIterator(expr(it), isKeyValue);
-		#if cpp
+		#if !hl
 		var _hasNext = it.hasNext;
 		var _next = it.next;
 		#end

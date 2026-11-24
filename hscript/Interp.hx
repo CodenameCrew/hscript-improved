@@ -1724,25 +1724,17 @@ class Interp {
 	}
 
 	inline function makeIterator(v:Dynamic, ?allowKeyValue = false):Iterator<Dynamic> {
-		#if js
-		// don't use try/catch (very slow)
+		#if (js || cpp)
 		if(v is Array) {
 			return allowKeyValue ? (v:Array<Dynamic>).keyValueIterator() : (v:Array<Dynamic>).iterator();
 		}
+		#end
+		#if js
+		// don't use try/catch (very slow)
 		if(allowKeyValue && v.keyValueIterator != null)
 			v = v.keyValueIterator();
 		else if (v.iterator != null)
 			v = v.iterator();
-		#elseif cpp
-		if (v is Array) {
-			return allowKeyValue ? (v:Array<Dynamic>).keyValueIterator() : (v:Array<Dynamic>).iterator();
-		}
-		if (allowKeyValue) {
-			try v = v.keyValueIterator() catch (e:Dynamic) {};
-		}
-		if (v.hasNext == null || v.next == null) {
-			try v = v.iterator() catch (e:Dynamic) {};
-		}
 		#else
 		if(allowKeyValue) 
 			try v = v.keyValueIterator() catch (e:Dynamic) {};
@@ -1777,10 +1769,8 @@ class Interp {
 		if(isKeyValue)
 			declared.push({n: ithv, old: locals.get(ithv), depth: depth});
 		declared.push({n: n, old: locals.get(n), depth: depth});
-		#if hl
 		var it:Iterator<Dynamic> = makeIterator(expr(it), isKeyValue);
-		#else 
-		var it = makeIterator(expr(it), isKeyValue);
+		#if cpp
 		var _hasNext = it.hasNext;
 		var _next = it.next;
 		#end
